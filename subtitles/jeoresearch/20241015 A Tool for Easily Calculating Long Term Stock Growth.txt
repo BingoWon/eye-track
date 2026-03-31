@@ -1,0 +1,20 @@
+Title: A Tool for Easily Calculating Long Term Stock Growth
+Date: 20241015
+Description:
+This is a simple tool that helps you plot and visualize long-term stock growth trends. It is designed with long-term investing in mind, and allows you to project stock growth from the current price to 10 years into the future by clicking on a point in the chart. 
+
+The compounded growth rate is calculated based on historical data and can help estimate whether a given company or index is underpriced or overvalued based on long term trends. 
+
+The tool is available on GitHub as both an EXE and Python script, and I’ve included a sample data file for 3M Corporation (Company). You can easily input your own stock data by downloading the historical data from Yahoo Finance in CSV format. 
+
+Github repository (Python and .EXE): 
+https://github.com/NuncObdurat/financialtools/tree/main/Stock%20Analysis
+
+Please like and subscribe to help support this and other open source software! 
+
+****Note that this tool is not a predictor of stock prices, but a calculator of the trend based on long-term growth.
+
+========================================
+Subtitles:
+
+hi everyone I wanted to share a little tool I built that can help you plot and visualize long-term growth trends for your stocks which you're seeing here is a plot of day-to-day data for stocks price for a given number of years clicking on the plot will project the average stock price out 10 years into the future assuming you purchased it at the latest price and assuming the long-term growth rate stayed constant for those 10 years so if I click here you'll see the line adjusts and the compound growth rate is updated the growth rate is computed based on the first data point and the data point that you click within the plot you can click anywhere which allows you to adjust the trend line to set the curve at a growth rate corresponding to that point high and low trend lines based on the highest and lowest values of the stock over the past five years are shown in green and red for reference I put this tool on GitHub both as an exe and python script for your convenience to use the software just run the exe or python script which will bring up a file selection dialogue box from that menu select a file with stocks historical data which should be in the same format as downloading historical data from Yahoo finance this should be a comma separated value file with the date open high low close adjusted close and volume data for the period of time you want to analyze I've included a sample file for 3M Corporation once you've selected the file the plot will appear and you can start your analysis please do hit the Thumbs Up And subscribe if you would like to help support the channel and thanks for watching

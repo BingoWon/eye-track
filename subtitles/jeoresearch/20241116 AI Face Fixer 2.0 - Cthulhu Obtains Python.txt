@@ -1,0 +1,16 @@
+Title: AI Face Fixer 2.0 - Cthulhu Obtains Python
+Date: 20241116
+Description:
+We played with our Python AI face fixer algorithm (video link below), and it began to fall apart. These are some of the results. 
+
+AI Face Fixer 1.0: https://youtu.be/AyFfaayLPqs
+
+The open source Python script:  
+https://github.com/JEOresearch/eyeswapper
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+[Laughter] yeah that's

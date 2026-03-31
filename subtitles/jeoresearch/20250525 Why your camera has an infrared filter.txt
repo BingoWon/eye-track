@@ -1,0 +1,21 @@
+Title: Why your camera has an infrared filter
+Date: 20250525
+Description:
+Have you ever wondered why your camera has an infrared filter? This video shows you how they work and demonstrates the filtering process on infrared LEDs and various camera images. These filters are what helps your webcam or camera have a clear, crisp image with the right color.
+
+Links to the items in this video are listed below: 
+  Magnetic clip holder ($25): https://amzn.to/3ZsUeeQ
+  IR Torch ($27): https://amzn.to/3Fab4bD
+  Spinel OV9281 camera ($67): https://amzn.to/4jLQHAP
+  Aztec Death Whistle ($33): https://amzn.to/43KuUDy
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hi everyone. Have you ever wondered why your webcam has an infrared filter? In this video, I'm going to show you what these filters really do and how they affect the image you see on your screen. This is one I removed from a monochrome webcam. So, let's take a close look at how it works. To give you an idea of how much light it actually blocks out, I'm going to turn off the lights and cover these infrared LEDs. The infrared filter just blocks the infrared wavelength while letting everything else pass through. But how much light does it actually filter out of your webcam? To show you exactly how much light is removed from the camera image, I've set up a monochrome camera with an infrared flashlight facing my Aztec death whistle. Here's what the light looks like in front of the whistle. And then when I place the filter in front of the lens, you can see the difference between the lighting on the whistle and everything else. The flashlight's IR light is filtered out, whereas the visible spectrum still illuminates the surface. In this clip from another camera with no IR filter, you can probably already see some color distortion. When I move the IR filter over the lens, you can see that my skin tone is closer to that of a normal webcam. To really see the effect clearly, we can put the filter in front of the camera when it's facing the IR flashlight directly. When it's on your camera, this prevents infrared reflections or glare from distorting the resulting image. Feel free to subscribe for other videos like this.

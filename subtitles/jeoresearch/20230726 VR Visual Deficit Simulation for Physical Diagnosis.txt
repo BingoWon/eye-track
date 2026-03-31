@@ -1,0 +1,14 @@
+Title: VR Visual Deficit Simulation for Physical Diagnosis
+Date: 20230726
+Description:
+This video shows a demonstration of the macular degeneration simulation we designed for integration into a university-level physical diagnosis course in 2022. Participants go through a short training phase, and are then tasked with searching for and taking a specific medication. This is designed to give the participants perspective on the challenges geriatric patients go through on a day to day basis.
+
+Note: captions (cc) are included that describe video contents.
+
+The paper citation is below. 
+Alexander, D., Nguyen, T., Keller, P., Orlosky, J., Brown, S., Wood, E., ... & Jirau-Rosaly, W. (2020, March). Design of visual deficit simulation for integration into a geriatric physical diagnosis course. In 2020 IEEE Conference on Virtual Reality and 3D User Interfaces Abstracts and Workshops (VRW) (pp. 838-839). IEEE.
+
+========================================
+Subtitles:
+
+Design of Visual Deficit Simulation for Integration into a Geriatric Physical Diagnosis Course Participants first go through a training phase to get used to the environment and interact with medications if desired. Once start is pressed, macular degeneration is turned on, and the participant must self-medicate. They must pick up and read the medication labels to select the correct one. The simulation ends either when time expires or if they successfully self-medicate during the allotted time.

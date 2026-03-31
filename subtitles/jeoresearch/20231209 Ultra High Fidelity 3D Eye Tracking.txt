@@ -1,0 +1,23 @@
+Title: Ultra High Fidelity 3D Eye Tracking
+Date: 20231209
+Description:
+This video shows how eye tracking can be used to control high fidelity 3D eye models. The algorithm is available via our open-source eye tracker, and the 3D model is rendered in Unity in real time. 
+
+The basic open-source version of the eye tracker can be found here: 
+https://github.com/YutaItoh/3D-Eye-Tracker
+
+In a future video, I plan to show exactly how this is done, including image processing, pupil detection, and 3D model fitting.
+
+An inexpensive eye camera, IR LEDs, and soldering kit can be found at the links below:
+Spinel 720P Monochrome Camera OV9281: https://amzn.to/4jLQHAP
+Basic Soldering kit: https://amzn.to/3QakEgh
+3mm 940nm 1.2V Infrared LED: https://amzn.to/411g5er
+
+These are affiliate links that help support the channel at no extra cost to you. The earnings go toward the development of open-source software and projects like this!
+
+#eyetracking #vr #3d
+
+========================================
+Subtitles:
+
+This video shows how eye tracking can be used to control high-fidelity eye models. After calibration, a 3D model helps fit the pupil ellipse to the correct position on the eye sphere. Then, the eye gaze ray and pupil radius are sent to Unity to control a 3D model. A custom shader modifies the pupil radius in real time. Stay tuned for details of how this is done.

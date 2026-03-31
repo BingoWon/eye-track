@@ -1,0 +1,19 @@
+Title: VR simulation of starbursting, halos, and ghosting after laser eye surgery
+Date: 20231203
+Description:
+I created this video to inform potential patients about the possible side effects of LASIK. This includes common visual problems such as starbursting, halos, and ghosting, which patients may experience in low-light situations like night driving, concerts, or dark rooms. I also show a corneal flap dislodge with different severities. 
+
+0:18 Starbursting
+0:50 Halos
+1:00 Ghosting 
+1:30 Combination of starbursting, halos, and ghosting
+1:42 Dislodged corneal flap
+
+All of these side effects are done using custom shaders!
+
+*Note that the thumbnail for this video was generated using AI.
+
+========================================
+Subtitles:
+
+hello YouTube today I'm going to show you what it's like to have some of the side effects of lasic laser surgery this includes star bursting Halos ghosting and even a dislodged corneal flap this simulation will give you an idea of what different severities of the side effects would look like in different situations let's start with night driving I'm going to turn on the star bursting to medium and you can already start seeing small streaks of light protruding from the lights in the environment in other dark environments like concert settings small Reflections or lighter colored objects may also have a similar effect Starbursts are the most pronounced for dark situations with small Point lights Christmas lights are the perfect example and as I turn up the severity you should be able to see the effect more clearly the same for the driving simulation now I'm going to switch from starbursting to Halos which are generally less pronounced but can still affect your vision nonetheless basically you'll see an aura around lights that takes on the color of the original light this is especially pronounced for Street lamps and increases in size and intensity with the brightness and size of the light source next is ghosting which is most visible in locations like concert Halls you can see that there are faint copies of the piano and player to the sides of the original image though the number and location of images will likely vary for each individual the violinist and pianist in the second scenario also appear to have their limbs or instruments copied you can see the same effect for the Christmas lights the star bursting is usually more pronounced for these in a worst case scenario you might have some level of all three of these so let me turn them up to maximum severity the star bursting is probably the most visible but the Halo and ghosting also compound the total effect they might even interfere with your night driving or reduce visibility during other low light situations now let me turn the first three off and the next one I'm going to display is the corneal flap dislodge a mild dislodge might look like a haze or a slight blur in your field of view this may not severely affect Vision but will likly cause some pain and discomfort a major dislodge would probably result in significant blurring and pain if this happens you should see SE medical treatment immediately the corneal flap dislodge is probably the least likely of any of these side effects but the starbursting ghosting and Halos or some combination thereof may happen in low lighting that's all I have for you today thank you for watching and have a great day

@@ -1,0 +1,17 @@
+Title: A Look at the Brains of Virtual Organisms
+Date: 20230724
+Description:
+This video shows how neurons form in virtual organisms that are trying to forage for food in a simulated arena. We show their foraging behavior and the internal structure of their brains in real time, which can help with the understanding of how neural networks process information. This system can also give key insights into how microorganisms may have first developed brains or neural structures. 
+
+The simulations in this video were produced by the research from our GECCO paper.
+Citation: 
+Orlosky, J., & Grabowski, T. (2021, June). Genetic crossover in the evolution of time-dependent neural networks. In Proceedings of the Genetic and Evolutionary Computation Conference (pp. 885-891).
+PDF:
+https://dl.acm.org/doi/pdf/10.1145/3449639.3459293
+
+#asmr #ai #vr #research
+
+========================================
+Subtitles:
+
+[No English subtitles available for this video]

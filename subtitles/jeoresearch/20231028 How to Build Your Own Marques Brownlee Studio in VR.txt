@@ -1,0 +1,18 @@
+Title: How to Build Your Own Marques Brownlee Studio in VR
+Date: 20231028
+Description:
+This video shows you how to build your own virtual replica of two of Marques Brownlee's studios. I also include a short Unity tutorial highlighting some of the textures, assets, and scripts needed to make this happen. 
+
+The two environments are based off of the following videos: 
+Monitor review: https://www.youtube.com/watch?v=MEiq0oCUb_8
+Studio Tour: https://www.youtube.com/watch?v=m9WbQMhkYvw
+
+Other relevant tutorials for the useful components in the simulation:
+Render textures for webcams: https://www.youtube.com/watch?v=rBVhQ0O0ShQ
+Ready player me avatar: https://www.youtube.com/watch?v=c_BwPKN96YM
+Video player: https://www.youtube.com/watch?v=1903h0KI7tE
+
+========================================
+Subtitles:
+
+hello YouTube this is Dr o and today I want to show you how to create a studio setup like Marcus browny's in virtual reality in addition I'm going to briefly walk you through how I set this up in unity so that you can easily create your own now what you're seeing here is a copy of Marcus brownley Studio when he reviewed the Samsung gaming monitor as you can see the lighting and Rune setup are virtually the same pun intended as Mr browny's and I have replicated the monitor system that he showed in addition I added his Avatar and there is a virtual web camera above the monitor that gives us a view of the Avatar and the room however this isn't the only Studio that I built I also created a replica of the room he uses for interviewing guests complete with acoustic padding lighting and seating fortunately one of the benefits of virtual reality is that all of this can be created for relatively no cost by using off-the-shelf assets and unity next next I want to show you the unity environment itself and explain a few of the key components that you might need to create your own setup let's start with lighting each of the lights you can see in this scene is a point light each light has a specific range and color which way you will likely need to adjust to get your environment lit the way you want it for example the lights in the lower left have a range of about 3 to 5 and the color is set to purple in addition there are a few spotlights that highlight specific parts of the scene like facial geometry two more significant assets that you might use are an avatar and embedded videos this Avatar was made by Ready Player me and the model is set to be controlled by the vibe Pro eyes head position the monitor on the right is simply a curved plane that I made in blender and I have attached a video of Rocket League using the video player component the second scene also has two room cameras which make use of render textures each triangle and polygon panel in the room were also made in blender which I made by subdividing and editing the default Cube model I'll include links to several tutorials below for the important components in the scene feel free to leave any other questions in the comments thank you for watching and have a great day

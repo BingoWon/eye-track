@@ -1,0 +1,25 @@
+Title: 3D Gaze Tracking in Python
+Date: 20250611
+Description:
+Open-sourced head tracking for screen/cursor control.
+
+This tool allows you to conrol your monitor with head gaze. Using your webcam, you can move a cursor and interact with a screen keyboard or other applications. I hope this will be useful for individuals with motor impairments or diseases like Parkinson's, Stroke, Cerebral Palsy, Multiple Schlerosis, ALS, PSP, or dystrophy.
+
+The software is open-sourced at the link below: 
+https://github.com/JEOresearch/EyeTracker/tree/main/HeadTracker
+
+I recommend the Brio 100 webcam since it's inexpensive ($30) and has a clear HD image, adequate resolution, and adjustable settings: 
+https://amzn.to/43of401
+
+This is an initial version of the gaze tracker, which I plan to combine with eye tracking in the near future. Feel free to subscribe to the channel if you would like to see updates, and thanks for watching! 
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hey everyone, I just finished building a 3D head gaze tracker that allows you to control your cursor and interact with your monitor. This video will give you a brief overview of how it works and how to use this tracker for screen control, which I hope will be useful for those with motor impairments or as an assisted technology in general. I'm also working on combining this with eyetracking. For head gaze, you just need a web camera, and I recommend the Brio 100 for its clarity and $35 price tag. The camera has to know how your head is oriented relative to your monitor, which requires knowledge of the entire head's 3D orientation. My code calculates this gaze vector using the outer points of your facial features. But we still need to calibrate this by pointing your head at the center of your monitor and pressing C. My code calibrates the gaze vector to the screen by reorienting the vector, which lets you use it like a mouse cursor. This can be used to make selections, scroll through windows, and do most monitor-based activities. Now, in one of my previous videos, you probably saw my 3D eye tracker. This head gaze tracker is actually the second step in a complete monitor-based eye tracking solution which uses the GCO308 camera module and a commodity webcam. I also plan to build a toolkit for things like blink detection, so feel free to subscribe for updates and more projects like this.

@@ -1,0 +1,18 @@
+Title: Using VR to Help Artists with Parkinson's Disease
+Date: 20240625
+Description:
+In this video, I share the research we're working on at Augusta University to help artists with Parkinson's disease. Hand tremors can make sculpting incredibly challenging, but our new VR application makes the process easier and more enjoyable.
+
+You'll see a demonstration of hand tremors while sculpting in VR, how a virtual model helps artists practice, an in-depth look at Parkinson's tremors visualized over time, how to stabilize these tremors using a filter, and a comparison between original and filtered sculpting actions that shows the improved precision. Afterwards, artists can 3D print their creations, opening up new possibilities for those with physical impairments to engage in art.
+
+Be sure to leave any questions in the comments. Your feedback is invaluable to us, and Thanks for watching!
+
+The IEEEVR poster publication for this, which won best poster award at the conference, is below: 
+Erb, L., & Orlosky, J. (2024, March). Tremor Stabilization for Sculpting Assistance in Virtual Reality. In 2024 IEEE Conference on Virtual Reality and 3D User Interfaces Abstracts and Workshops (VRW) (pp. 753-754). IEEE.
+
+https://ieeexplore.ieee.org/abstract/document/10536537
+
+========================================
+Subtitles:
+
+hi everyone I want to talk about some research we're working on to help artists with Parkinson's disease and here you're seeing what hand tremors look like when you're sculpting the purple base in the background is a virtual model of a Target sculpture for the artist to practice with and they can push these little spheres in or out to change the shape but you can see how difficult this would be when your hand is constantly shaking so how can we study the artist's hand let's first take a look at what Parkinson's tremors look like over time this is an application showing simulated Tremor on the top graph which generally looks like a sine wave moving back and forth at about 5 to 6 Hertz or 5 to 6 oscillations per second to reduce this I'm going to use the slider on the bottom to take a running average of the last several frames of data from the controller and return that as a new position as I slide this averaging window over the Tremor oscillations you can see that the resulting waveform on the bottom is now smaller however to completely reduce the Tremor we need to increase the window size to once or twice the period of the oscillation using the slider on the right now as I slide the window over the top waveform we can see that the averaging almost completely reduces the visible Tremors in the resulting output in comparison to the original sculpting when I apply this filter to the virtual sculpting tool you can see that the artist's hand appears steady and they can visually sculpt much more precisely with this we can 3D print the results giving people with motor diseases a better way to sculpt model and create art in general be sure to leave any questions in the comments and thanks for watching

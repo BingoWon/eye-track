@@ -1,0 +1,30 @@
+Title: DIY Eye-tracked Terminator Glasses
+Date: 20250413
+Description:
+A DIY project using the Raspberry Pi using an eye tracker and OLED panel. 
+
+In this video, I’ll show you how to build your own eye-tracked Terminator glasses using a budget infrared camera and a compact RGB OLED panel. These components are affordable and small enough to fit behind standard eyewear, turning any pair of sunglasses into terminator sunglasses!  
+
+Open-source code: 
+- https://github.com/JEOresearch/terminatorsunglasses
+
+Links to parts
+- GC0308 Eye Tracking Camera ($17): https://amzn.to/41x8p2W
+- USB extension cables ($10): https://amzn.to/43SznVl
+- Raspberry Pi 4B ($60): https://amzn.to/3YlQnzV
+- RBG OLED Panel ($24): https://amzn.to/3ElpkxC
+- Pi cable set ($6): https://amzn.to/43TeSYC
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+OLED Setup wiki and video:
+- Wiki: https://www.waveshare.com/wiki/1.5inch_OLED_Module_(B)
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+In this video, I'm going to show you how to build a pair of eyetrack terminator glasses. These use a small eyetracking camera and an RGB OLED panel, both of which are relatively inexpensive, and they're also flat enough to fit behind a pair of glasses. I'll also walk you through the build process, provide some tips and tricks on how to get things working, and show you how to use all my open source code. There's a full parts list in the description, but let's start with the GC308 infrared camera. This camera is under $20 and it's the only one I know of that's small enough to fit inside a pair of glasses at this price. To get it in the right spot on the glasses before hot gluing it into place, I first used a piece of tape to secure it. However, eventually I opted for pipe cleaners which keep the camera in place but can be flexed slightly for adjustment. When you test the camera, you want to make sure that the pupil is as close to the center of the image as possible with the camera slightly below your eye on the glasses. Next, you can hot glue one or two sides to the glasses and test again. And then glue all four once you have the right spot and angle. When you're done, it should look something like this. You can use a bit of electrical tape to hold the wire to the frame so that it falls behind your ear. Now, you need to connect the OLED panel to the Raspberry Pi. And I'm going to show the wiring diagram here if you want to pause the video to plug in the pins. Note that you may need extenders if your wires are too short. I've added some here and taped them up for stability. The links to the OLED panel, cables, and other parts, as well as a video on how to set up the panel on the Raspberry Pi, are in the description. Once the cables are connected, download my Python script from the GitHub link and run it from the root folder of the Pi for a test. When you run the script, you should see a red dot on the OLED panel, and you can put on the glasses to make sure the camera is tracking. No worries if it's not perfect since we can adjust the position and size later. Also, remove the screws and bolts from the panel to allow it to lie flush on the glasses. Next, position the OLED in the center of the glasses and hot glue the edges in place. I've also added some foam pads on the nose piece to keep them slightly farther away from my face. Once everything is attached, it should look like this. When you run the script again, you should get something like the following. If the red dot is not in the right position or if it's too slim, there are three parameters in the script that you can use to modify the X and Y position as well as the vertical scaling. Once you've got the dot in the right position, place some tape over the components so that they will not be exposed to your eyes. You can also fit one piece of tape over the right hand side of the eye tracker. Now you have a pair of eyetrack terminator glasses. Feel free to subscribe for more projects like this. Let me know if you have any questions in the comments or Discord. And thanks for watching.

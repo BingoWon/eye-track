@@ -1,0 +1,13 @@
+Title: Head-tracked Subtitles Using Augmented Reality
+Date: 20240613
+Description:
+In this video, I showcase a real-time subtitling application for augmented reality that tracks with a user's head. It's built using Unity, Vosk, and the Llama3 large language model. The application leverages these applications to display anyone's speech as real-time subtitles, which are shown through the camera of a modded video see-through HTC Vive Pro. 
+
+Stay tuned for deployment on a standalone device and for real time translations. I'll put my code on github once all of the bugs are worked out. 
+
+Don't forget to like, comment, and subscribe if you want to see more innovative AR applications and the upcoming language translation version!
+
+========================================
+Subtitles:
+
+hey everyone it's Jason here and today I have an augmented reality application for you that does realtime subtitling just below your mouth so I use unity and the Llama 3 large language model to do this and as you can see you get real-time sub pedals that are tracked and move with you uh there's a Vive tracker Puck on top that you can see there's a little green sphere to show its position and that helps the text track with my head uh but this could be an any augmented reality display like the hollow lens 2 the Apple Vision Pro or The Meta Quest 3 so it's just a matter of implementation in my next video I will do auto translations so you'll be able to see not the text here but the text in a destination language so you can imagine if everybody has an AR headset in the future uh you can look at anybody see their subtitles in the destination language of your choice so for that and more cool updates feel free to subscribe and thank you for watching

@@ -1,0 +1,89 @@
+Title: DIY Infrared Eye Tracker for under $100
+Date: 20241118
+Description:
+In this video, I demonstrate how to build an eye tracker from off-the-shelf parts for under $100.  I detail which camera to use, how to mount and solder infrared LEDs to light up the eye, how to adjust the camera's focus, and how to use the resulting camera with open-source eye tracking software. This is a good video if you are interested in DIY electronics projects, eye tracking, or computer vision applications. 
+
+The parts used in this video are available via Amazon at the links below:
+
+Spinel 720P Monochrome Camera OV9281: https://amzn.to/4jLQHAP
+Basic Soldering kit: https://amzn.to/3QakEgh
+3mm 940nm 1.2V Infrared LED: https://amzn.to/411g5er
+irradiance meter: https://amzn.to/4jCV4yy
+
+Irradiance can be measured with the following meter to ensure any LEDs you use to comply with IEC 62471 standards for infrared safety.
+irradiance meter: https://amzn.to/4jCV4yy
+See the following video for reference: https://youtu.be/z30AyH_1XVE
+
+0:13 - Camera and LED selection
+0:31 - Removing the camera's IR filter
+1:35 - Mounting and soldering the LEDs
+*The LED orientation is flipped in the video - sorry! The correct orentation should be the long lead (anode) at the base of the triangle and the short lead (cathode) at the line. 
+2:25 - Soldering
+2:54 - Adjusting focus
+3:15 - Output and how to run eye tracking software
+
+If the Spinel is not available on Amazon, you can get it direct: https://www.spinelelectronics.com/product/uc10mpc/
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+Open source Python eye tracker:
+https://github.com/JEOresearch/EyeTracker
+
+Other than that, you will need the following: 
+- A soldering iron and some solder
+- An Exacto knife or other sharp object to remove glue from the IR filter edges
+- A piece of lint-free cloth to wipe any oil residue off of the lens housing
+
+What the eye tracking should look like: 
+https://www.youtube.com/watch?v=B06cUMplDHw
+
+Have fun prototyping!
+
+========================================
+Subtitles:
+
+In this video, I'm going to show you how to build 
+an inexpensive ey tracker from scratch. I'll show you which camera to use, how to mount LEDs, how 
+to solder them onto the camera board, how to test that they work, and how to use the output 
+with an open source ey tracking framework. For our camera we're going to be using a monochrome 
+Spinel 720p, which is less than $100 on Amazon. For illumination we'll use 3mm 940 nanom IR LEDs, 
+and links for both of these items are in the video description. You'll also notice several holes on 
+the sides of the camera, which are actually for mounting the LEDs, but before we do that we need 
+to remove the camera's infrared filter. To do so, start by unscrewing the lens from the camera 
+module counterclockwise. It should come off fairly easily many cameras come with this filter 
+to prevent IR light from entering the sensor, but in our case we need to remove it for the 
+LED light to be visible. Once unscrewed you'll see what looks like a small red mirror on the 
+bottom of the lens housing. This should just be glued on so we're going to remove the glue to 
+free the lens. Scissors or even nail clippers might accomplish this task but I'm using an 
+xacto knife for precision. Carefully remove the glue from each corner. You don't have to worry 
+about damaging the IR filter but it's best to be careful so that you don't hurt yourself or damage 
+the lens in the process of removing the filter. Once the glue is removed you can use a pick 
+or sharp edge to lift the glass and remove it from the housing. There may be some grease on 
+the housing so be sure to wipe it off without touching the lens. Slowly and carefully screw the 
+lens back into the board and be sure not to force it or strip the threads. When you're done, your 
+camera should roughly look like the following, and now we're ready to start mounting the LEDs. 
+If you want you can first just test the LED to make sure you inserted it the correct way and that 
+the camera is powering the LED I'm just going to push it through temporarily so you can see what it 
+looks like the long side also known as the anode or positive lead should go in the hole closest 
+to the small line the short or the negative side should go at the bottom of the triangle 
+when the spanel camera is on you you should see the LED turn purple when viewing it through 
+an external camera even if it's just resting in the holes here's what all four should look like 
+note that this is not visible to the human eye before we start soldering be sure to turn off or 
+unplug your camera at this point I'm also going to slightly bend the leads to hold them in place 
+but when you do this be sure to leave roughly 2 mm of space between the LED plastic and the board 
+itself you'll see why this is important later now that the LEDs are roughly held in place let's get 
+our soldering iron ready I've also detached the cable and put the board face down for easy access 
+bring your heated soldering iron to touch the hole and lead and after a second or two touch 
+just enough solder to the well to fill it and coat the lead repeat this process for each of the 
+leads double-checking that they are in the right orientation before soldering when you're finished 
+and turn the camera back on all LEDs should now be lit clip off the ends of the leads and your camera 
+should now look like this when you start the camera on your PC you'll probably get something 
+that's out of focus rotate the lens clockwise or counterclockwise to decrease or increase the 
+focal length in addition bend the LEDs slightly inward to ensure the entire eye is illuminated 
+here's what the camera image looked like before and after bending them into place now you should 
+have a clear well illuminated image to conduct ey tracking lastly if you need to test an eye tracker 
+go to my ey tracker repository on the jeo research GitHub page run the code with a webcam option set 
+to two and you should now be able to test your eye tracker. Feel feel free to subscribe if you want 
+to see more videos like this and have a great day.

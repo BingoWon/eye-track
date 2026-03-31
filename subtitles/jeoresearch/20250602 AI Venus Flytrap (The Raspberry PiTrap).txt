@@ -1,0 +1,27 @@
+Title: AI Venus Flytrap (The Raspberry PiTrap)
+Date: 20250602
+Description:
+I made an electronic Venus flytrap. Can it catch flies?
+
+Tired of fruit flies landing on your bananas? I was too, so I built an electronic Venus Fly Trap using the Raspberry Pi and computer vision. In the video, I’ll show you how I created the Venus Pi Trap using simple electronics, an infrared camera, micro servo motors, and some hot glue. I also test it on real fruit flies from my kitchen.
+
+Code here:  https://github.com/JEOresearch/venuspitrap
+
+Parts from the video:
+GC0308 camera: https://amzn.to/43HDXnA
+SG90 Micro Servo: https://amzn.to/43HiXNK
+Magnetic Clips: https://amzn.to/3Zaoqvh 
+Raspbery Pi 4b: https://amzn.to/43CkKDJ
+
+Stay tuned for more DIY projects like this! 
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Do you ever get tired of those little flies in your house that land on your bananas? I built this the Venus pie trap to see if we can catch some. I'll show you how it's built, how it's used, and whether or not it actually works. So, the nice thing is that these parts are less than 100 bucks, and this is based off the Raspberry Pi, so it's pretty easy to construct. I used the GCO308 camera cuz it has an infrared light source, and all I did was attach it here with pipe cleaner. The trapping mechanism is made from two SD90 servo motors, and they're just attached to the Raspberry Pi up here. Lastly, everything is either screwed or glued to this wooden board on the bottom. And the pads are just foam hot glued to an index card. Once a fly is detected, they clamp shut and hopefully we'll be rid of our fly problem. If you haven't already guessed, I'm using computer vision to do the detection. And more specifically, I'm using a method called background subtraction, which detects movements based on the comparison between previous and current frames. All right. Now, I want to run some tests to see if we can actually catch flies. And I just took a thread and made a little knot at the end and I'm just seeing if it will get caught. And so far so good. I also put out some old banana as bait. And lo and behold, the flies have come in for a meal. I started off by putting a little piece of banana on the fly trap here. But unfortunately, after an hour, nothing happened. So to solve this problem, I modified the setup so there's a camera above the detector, and this will automatically record anything that happens below, and I don't have to be there to watch it or worry about my camera batteries running out. I also added a little piece of banana underneath for some extra motivation. When I checked the camera in the morning, I had a first failed attempt. Second time around, maybe this one must be successful. Oh, maybe. Yes. Oh, got him. Oh, no, he's escaping. Okay, unconfirmed kill. And after going through a bunch of false positives in the video, I got not only one, but two fruit flies that night. So, yes, the Venus Pie trap does work, but there are probably more effective ways to catch flies. Feel free to subscribe for more projects like this, and thanks for watching.

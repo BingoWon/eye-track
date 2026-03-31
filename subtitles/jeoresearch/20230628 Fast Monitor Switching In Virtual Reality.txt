@@ -1,0 +1,12 @@
+Title: Fast Monitor Switching In Virtual Reality
+Date: 20230628
+Description:
+This video demos an new browser designed for XR Systems, in which users gaze at icons to switch quickly between tabs or monitor screens. The unity package and code are included below, which is a prototype that illustrates the concept. 
+https://github.com/NuncObdurat/vrwindowswitcher/
+
+Feel free to comment if you have any issues getting this working or want to see new features!
+
+========================================
+Subtitles:
+
+what's up YouTube in this video I'm going to introduce a fast window switching technique for displays like the application pro metaquest pro and other types of head mounted display systems if you're new to this channel I'm Dr o I design techniques for augmented and virtual reality systems and most of the software that you'll see here is open sourced so today I'm presenting a fast window switching system which is designed specifically for virtual reality devices in virtual reality you need a quick way to switch between interactive elements and using alt tab or a controller can be quite time consuming to solve this problem I designed an eye tracking system to let you quickly switch between Windows just by gazing at icons so the screen you'll see here is a Unity window and as you can see all I have to do is look at each icon and the main window instantly switches to that content this is just a prototype system so the textures presented here are examples of what you could actually use in practice as you can see from the video this is quite a bit faster than using a controller or Mouse to switch between applications so Apple meta magic leap companies like this will probably be using this as a standard for switching between applications in the future a basic unity file and some code samples are included in the links below so check those out those out if you want to experiment with the system yourself thanks for watching and shoot me any questions in the comments please do hit the like button if you enjoyed this video and feel free to subscribe if you want updates on cool new tech thanks and have a great day

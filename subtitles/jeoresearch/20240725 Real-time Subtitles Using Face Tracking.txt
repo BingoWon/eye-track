@@ -1,0 +1,16 @@
+Title: Real-time Subtitles Using Face Tracking
+Date: 20240725
+Description:
+This is an updated personal subtitling and translation application for augmented reality, though the current version could also be used for Zoom, MS Teams, or other teleconferencing applications. I also have a version that can do post-processing on a recorded video, which might be useful for the hearing-impaired. 
+
+The end goal is to be able to do translations/subtitles in a language of your choice. I'm currently working on a custom large language model to handle this, so stay tuned! Incidentally, all of this code runs offline, with no calls to any systems like Whisper or ChatGPT. 
+
+Here is the link to the software on GitHub! 
+https://github.com/JEOresearch/transcriptions
+
+Feel free to subscribe if you want to see the next iteration!
+
+========================================
+Subtitles:
+
+hey everyone I have an update for you on the augmented reality translation system that I've been working on I made a few updates to the last subtitling application which you can see running right now for example the text is larger and clearer and the font should be more visible I'm also using face tracking instead of the Vive tracker from last time so a big thank you to Atlas 7309 for suggesting that H this uses the horor Cascade classifier to track my face I think this might actually be pretty useful for teleconferencing applications in addition to augmented reality so I'll probably release this as uh a separate application on GitHub more importantly I now have the Japanese fonts and transcription working for example I'm still working on the custom large language model to facilitate the translations so feel free to subscribe if you want to see the next iteration and thanks again for all the helpful comments in the last few videos they are very appreciated

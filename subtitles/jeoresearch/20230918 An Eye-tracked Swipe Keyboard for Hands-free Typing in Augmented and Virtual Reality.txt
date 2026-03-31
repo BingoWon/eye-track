@@ -1,0 +1,12 @@
+Title: An Eye-tracked Swipe Keyboard for Hands-free Typing in Augmented and Virtual Reality
+Date: 20230918
+Description:
+This is a demonstration of the work being done at Augusta University to help physically impaired individuals or people who cannot use their hands to type. We combine eye tracking with the concept of a swipe keyboard, which is rendered in video see-through augmented reality (AR). This video was recorded through the Varjo XR-3, which is an AR display that does eye tracking and lets you see the environment. Two virtual eyes are rendered at the beginning of the video to show what the user's eye movements look like. 
+
+The citation for this work is as follows: 
+Mansour, A. and Orlosky, J. (2023) Approximated Match Swiping: Exploring more Ergonomic Gaze-based Text Input for XR. To appear in the adjunct proceedings of the International Symposium on Mixed and Augmented Reality. IEEE.
+
+========================================
+Subtitles:
+
+hey YouTube I'd like to introduce our work on combining gaze tracking and swipe keyboards to enable text input for individuals who may be physically impaired or not have the use of their hands this is all done in a display called the vario xr3 which does both eye tracking and video see-through augmented reality at the same time so what you're seeing in this video is actually a view through the xr3 with eye tracking and the user that you're seeing here is swiping out a path of letters which lets them automatically input a word just like this white feature that you would use on your phone so if you think of your phone swipe right you put your thumb on the trackpad or the the touchpad and then you swipe out the word and then you lift your thumb up and that types out the word here you look at the space bar you look at each of the characters that you want to type look back at the spacebar and it swipes out the word just like you would with your thumb on your phone and that enables people with physical impairments or people who don't have the use of their hands to type more quickly and augmented virtual reality

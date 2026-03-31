@@ -1,0 +1,18 @@
+Title: Eye Tracking for Easy Selection in AR and VR - EyeShadows
+Date: 20240313
+Description:
+This video shows a method for easy selection and interaction using eye tracking. It's called "EyeShadows," and by creating virtual copies of objects or icons, you can easily select or modify settings for a variety of applications. 
+
+This work will be presented at IEEEVR 2024, and is open-sourced at the following link: https://github.com/JEOresearch/EyeShadows
+
+Drop me a line in the comments if you think of any interesting use cases for this technology! 
+
+Reference: 
+Orlosky, J., Liu., C, Sakamoto, K., Sidenmark, L., & Mansour, A. (2024). EyeShadows: Peripheral Virtual Copies for Rapid Gaze Selection and Interaction. To appear in the Proceedings of the IEEE conference on Virtual Reality.
+
+#jeo #orlosky #jeoresearch
+
+========================================
+Subtitles:
+
+what's up YouTube today I want to talk a little bit about our eye tracking research and how you can use your gaze to easily select items what you're seeing here is a VR environment with a number of different targets and each of those targets has what's called a shadow or a virtual copy of itself that you can look at to select that Target this makes selections a lot faster and easier and this scales to other applications like analog sliders or dials uded or dynamic selection is also usually really difficult but this method scales to these types of selections as well another thing that's cool is that we have developed this for augmented reality and here's an application that allows you to control your air conditioning lastly we tested this with mix reality which in this application it lets you select or deselect a document that you would like to read this code is also open sourced and available as a Unity package at the link in the description that's it and thanks for watching

@@ -1,0 +1,15 @@
+Title: Augmented Reality Cyclocomputers
+Date: 20240330
+Description:
+Instead of having to look down, you can use augmented reality to attach content to the cyclist in front of you! This gives you a view of both your data and the person in front of you, and you can still easily tell when they are going to stop. 
+
+The original system is described in our TVCG paper, which can be found below. 
+https://drive.google.com/file/d/1CJ5r02zEU00B7pMmbpcqoPnLgSFM9YKt/view?usp=sharing
+
+Citation:
+Zhao, G., Orlosky, J., Gabbard, J., & Kiyokawa, K. (2023). HazARdSnap: Gazed-based Augmentation Delivery for Safe Information Access while Cycling. IEEE Transactions on Visualization and Computer Graphics.
+
+========================================
+Subtitles:
+
+hey YouTube I want to show you a new technology that prevents you from having to look down when you're cycling lets you paste information on the back of the cyclist in front of you and helps reduce crashes so what is that little green thing showing the heart rate and how did it get there originally we started out with a prototype which you see here that allows you to paste an entire screen on the back of the cyclist in front of you later on we just change it to a single piece of information to find the spot we want to attach information to we use computer vision which detects the location of a cyclist in a video stream what's actually going on in the background is that the rider is wearing a hall lens too there's a phone an rgbd camera or depth camera and a laptop mounted to the bike the combination of these systems allows us to detect objects and paste virtual information over them and this is what the final product would look like so imagine you're cycling and you want to check your heart rate or other information like navigation this will automatically appear on the back of the person in front of you and now you can view your updating stats and keep your eyes on the person at the same time thanks for watching watching and we hope that this app will help you cycle more safely

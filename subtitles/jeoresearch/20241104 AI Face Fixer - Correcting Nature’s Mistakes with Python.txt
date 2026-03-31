@@ -1,0 +1,24 @@
+Title: AI Face Fixer - Correcting Nature’s Mistakes with Python
+Date: 20241104
+Description:
+In this video, we unleash the power of AI to correct one of humanity's biggest design flaws: our eye positions. Using the latest in Python technology, we've developed a method to fix your face by swapping those pesky eyeballs to exactly where they should be. Perfect for DMV photos, your next passport pic, or that awkward yearbook photo, our Eye Position Correction Technology™ ensures you'll never look the same again.
+
+What Can This Script Do?
+
+- Revolutionize the beauty industry by providing flawless eye symmetry for magazines, drastically reducing labor costs. Our code's got you covered!
+- Perfect driver's license photos at the DMV. Why settle for a bad photo when AI can provide you with a facial masterpiece?
+- [Under development] This is currently being integrated into Augmented Reality to improve the looks of your partner without costly surgery.
+
+*Note: This is a parody. We cannot actually fix your face.
+
+We have now released AI Face Fixer 2.0: https://www.youtube.com/watch?v=Ai8OBag501o
+
+Open source Python script (amazing):  
+https://github.com/JEOresearch/eyeswapper/
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+now you ready yeah hold on [Laughter] [Music] [Laughter]

@@ -1,0 +1,35 @@
+Title: A DIY Security Camera that E-mails you when It Detects Motion
+Date: 20241231
+Description:
+This video demonstrates how to build and program a security camera that e-mails you a picture if it detects movement. It's an inexpensive way to have a good security system at home, and it's a great learning experience for high school or college students. You can also use it as a pet monitor, and you can even program it to send you entire videos. It uses a Raspberry Pi with an inexpensive mini camera module that connects to your wifi. 
+
+Github Repository: https://github.com/JEOresearch/securitycamera
+
+I also simplify and explain the process of installing the software and setting up the Pi, including:  
+
+1) setting up your gmail account to work with the Raspberry Pi
+2) the code for motion detection
+3) configuring the raspberry pi to run the script on startup
+
+Raspberry Pi 4b: https://amzn.to/40NDWgF
+Camera module: https://amzn.to/4jLQHAP
+USB-C power adapter: https://amzn.to/3Q4vqVy
+
+If you don't already have them, you will also need a monitor, keyboard, mouse and
+Micro HDMI to HDMI Cable Adapter: https://amzn.to/3EsvsnG
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+Instructions for setting up the pi if you need them: 
+https://www.youtube.com/watch?v=sq5S1MM2Pmo
+
+Please like and subscribe to support the development of these projects and other open-source software! 
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+in this video I'm going to turn this Raspberry Pi camera into a security system that can detect motion and email you pictures of the results directly to your phone to build this system we need to go through several steps like setting up your Gmail account to work with a pi running the code for motion detection and configuring the pi to run the script on Startup but you'll see that this is easier than you might think to start you'll need a Raspberry Pi a compatible camera and a Wi-Fi connection you'll also need to download the code from the jeo research GitHub repository from the link in the description let's start with setting up the app password in a new Gmail account which will allow the script to send emails to your main Gmail account I recommend creating a separate Gmail account specifically for this app for security once youve done this enable two Factor authentication in your Gmail settings once this is enabled search for app passwords in the search bar and click that option it will ask you for an app name for reference which you can name something like my new security cam note that it will give you a password specifically to with a code for this application the second step is to insert the credentials we just created into the python script's Global variables the security cc. py script is available on GitHub in the link in the description once you've downloaded the security cam PC file ensure that you have all the python dependencies installed additional instructions for doing this are on the GitHub if you need them open the script and look under the import section you will see three variables that represent the sender email I.E the new Gmail account you just created the receiver email or the main account you want to send the camera images to and password which is the app password that we generated when setting up the Gmail account replace these three values with your own the code should now be runnable on your PC via terminal if everything is working the output should look like the following and you should get an email at the address you specified as the receiver this means you're ready to deploy to the Raspberry Pi I'm going to assume you already have the Raspberry Pi operating system installed and that is connected to Wi-Fi there's a link in the description if you need help doing that download the security cam pi. py script from the jeo research GitHub page and save the file in your preferred directory change the same three variables we modified for the PC version and install any necessary dependencies now you can run this from the terminal to test when there is motion in front of the camera you will get an email at your Gmail account after movement is detected but there is one final step we need to go through if we want to run this on the pi in Standalone mode we need to set up the script to run it startup without having to plug in a keyboard or monitor before we do that first go into the security cami. pis script and comment out the two lines with IM imow since Pi can't execute these as a startup service next go to the Joo research GitHub repository and download the config file called config.txt edit both the home user directories and the user equal field to be your login for example if your Pi login was called mypie these would be changed to home/ myi and and user equal mypi if you don't know this login just type who am I in the terminal after these changes run the following command on the P to edit a new config file in the startup folder copy and paste the text from the config file you edited to this newly created service file and save it this will tell the pi to run our script at startup once this is done you can restart the pi without anything but the power and your security camera is ready place it in the spot you want to Monitor and you will be alerted via email whenever it detects movement links for all the items in this video are in the description to get you started and stay tuned for the next version where I'll provide code that can record store and manage video logs thanks for watching

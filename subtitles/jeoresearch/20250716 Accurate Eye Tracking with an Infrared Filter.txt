@@ -1,0 +1,25 @@
+Title: Accurate Eye Tracking with an Infrared Filter
+Date: 20250716
+Description:
+One small and inexpensive component can dramatically improve performance if you're building an eye tracker is an infrared pass filter.
+
+In this video, I explain what IR pass filters are, how they work, and how to easily install one onto an eye tracking camera. 
+
+Parts from the video
+Filter x3 ($14): https://amzn.to/4kHmjqI
+Infrared camera ($17): https://amzn.to/41x8p2W
+HQ infrared camera ($67): https://amzn.to/4nb6eMe
+Irradiance meter ($70): https://amzn.to/4jCV4yy
+
+These filters block visible light while allowing infrared wavelengths (typically above 850nm) to pass through, making them ideal for improving pupil detection.
+
+You'll see a side-by-side comparison of tracking with and without the filter, showing how it stabilizes the pupil ellipse and significantly improves the gaze vector estimation.
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+========================================
+Subtitles:
+
+For eyetracking, this little piece of black glass is extremely important for getting a crystal clear image. In this video, I'm going to show you how it works and how to install it on an eyetracking camera. First off, let's take a look at what it actually is. As you can obviously see, this glass appears to be black, but it's actually semi-transparent. It only lets non-visible light through. In this case, anything above the infrared wavelength of 850 nm. This is called my IR pass filter and a set of three is available for about $15 on Amazon. In the case of eye tracking, one of the things that makes nearey tracking so difficult is trying to accurately fit an ellipse to the pupil. When there are reflections on the eye, there are fewer pixels to fit skewing the ellipse. With an IR pass filter, the visible light that makes these reflections is largely reduced and only the IR LEDs from the eyetracking camera become visible. This is unlike IR cut filters that are normally found in webcams, which are designed to reduce infrared light to get a better picture tone. To install this filter, you just need to attach it to the front of the lens of your IR camera. I have the GCO308 here, which is also available on Amazon for under $20. And all I'm going to do is add a small dab of hot glue to this lens cover. Just make sure to clean your filter and lens before you do this. So, what did this actually do? First, let's take a look at the eye tracking with no filter. Notice the jittery movement of the gaze ray through the pupil which is due to the reflections from visible light. Now here is the eye tracking with IR pass filter installed. You can see that the pupil ellipse and resulting gaze ray are much more stable which will significantly improve the quality of your eyetracking. Again, these filters are available on Amazon for about $3 for $15. And this is a very easy and inexpensive way to improve your eyetracking accuracy. Feel free to subscribe for more videos like this. And thanks for watching.

@@ -1,0 +1,53 @@
+Title: 3D Eye Tracking in Python
+Date: 20250504
+Description:
+This video provides a brief overview of my open-sourced 3D eye tracker in Python. It's a heavily optimized port of the C++ repository released in 2017 by me, Yuta, Leszek, and Alex. Unlike the pupil fitter I released last year, this tracker provides the 3D origin and gaze direction for use with many eye tracking applications. 
+
+Code: https://github.com/JEOresearch/EyeTracker/tree/main/3DTracker
+
+Parts for camera and DIY glasses:
+- GC0308 Eye Tracking Camera ($17): https://amzn.to/41x8p2W
+- USB extension cables ($10): https://amzn.to/43SznVl
+- Cheap sunglasses ($5) https://amzn.to/42KBLN3
+- Pipe cleaners ($4) https://amzn.to/4jYwyXr
+
+I recommend getting the sunglasses and pipe cleaners from the dollar store, but using the links above do help support the channel ;) 
+
+In my next few videos, I will try to provide instructions for getting the tracker working as a gaze cursor for a monitor or AR/VR headset. 
+
+For anyone concerned about IR light exposure, I measured these cameras at 3cm away. For consistency/reference, I also measured two other light sources using the same meter: 
+
+- GC0803 @ 3cm:  3.6 W/m²  (0.36 mW/cm²)
+- Meta quest pro eye tracker @ lens depth:  2.2 W/m²  (0.22 mW/cm²)
+- Ambient light in my hallway (7PM, evening sunlight on floor): 1.3 W/m²  (0.13 mW/cm²)
+
+Note that this is a first release, and I will continue to optimize as time goes on. Please post any questions in the comments or on the Discord.
+
+Thanks!  
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+hi everyone i finally finished the Python version 
+of my 3D eye tracker and this video should give you a brief overview of how to build your own eye 
+tracker for testing with my code which provides you with a 3D gaze vector for applications 
+like screen control first off you'll need an eye tracking camera glasses with the lenses 
+removed and some pipe cleaner here I have the GCO308 eyetracking camera which is available 
+on Amazon for $17 i bought these glasses from the dollar store for about $2 and you can get 
+the pipe cleaners cheaply just about anywhere all you need to do is wrap the pipe cleaner around 
+the camera and cable and just make sure it's firm enough that it doesn't move after repositioning 
+next download the Orlosky3Dtracker.py file, install any necessary dependencies, and run 
+it from your terminal. You'll get a window asking whether you want to use a camera or 
+a video for the glasses select start camera reposition the camera if necessary to ensure 
+your eye is in full view and the eye tracking will self-calibrate to your eye position 
+the gaze origin and direction are printed directly on the OpenCV output window which 
+you can also write directly to file from the Python script if desired in the next few 
+videos I'll show you how to calibrate the tracker to different devices such as a monitor 
+or VR headset but I wanted to get this initial release out for everyone for testing feel free to 
+subscribe for updates on more projects like this!

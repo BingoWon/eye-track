@@ -1,0 +1,35 @@
+Title: 3D Eye Tracking in Python, with a Front Camera
+Date: 20251116
+Description:
+This video provides a brief overview of my open-sourced 3D eye tracker in Python, which now incorporates a front-facing environment camera. It's a heavily optimized port of the C++ repository released in 2017 by me, Yuta, Leszek, and Alex. In addition to tracking 3D origin and gaze direction for use with many eye tracking applications, it includes a calibration interface to associate the eye camera with the forward camera. 
+
+Please consider joining the channel to help support the development of this project! 
+
+Code: https://github.com/JEOresearch/EyeTracker/tree/main/FrontCameraTracker
+
+Parts for camera and DIY glasses:
+GC0308 Eye Tracking Camera ($17): https://amzn.to/41x8p2W
+Board camera ($9, poor quality but good for DIY): https://amzn.to/444eXIa
+USB extension cables ($10): https://amzn.to/43SznVl
+Cheap sunglasses ($5) https://amzn.to/42KBLN3
+Soft wire cabling ($9) https://amzn.to/4pi6wBn
+Electrical tape ($2) https://amzn.to/44ef97I
+
+You can probably get some of these things from the dollar store, but it may be easier just to get everything from the Amazon links.
+
+In my next few videos, I will try to provide instructions for getting the tracker working as a gaze cursor for a monitor, in AR/VR headsets, and as a completely mobile solution. 
+
+I will continue to optimize as time goes on, but please post any questions in the comments or on the Discord.
+
+Thanks!  
+
+All YouTube earnings support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases at no extra cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hi everyone. I finished another iteration of my 3D eye tracker in Python. And this video will show you how to build your own tracker for testing with my code and displaying a gaze dot on a for-facing camera. First off, you'll need an eyetracking camera, small board camera, glasses with the lenses removed, soft wire, and electrical tape, all of which are available in the video description. Here I have the GCO308 infrared camera, which I feature in several of my other videos. A new addition is this small camera board, which I've mounted to the front of the glasses using electrical tape. The Ford camera image quality is not that great, but this is the cheapest one I could find that was basically functional. I bought these glasses from the dollar store, and you can use pipe cleaners or coated wire to hold the cameras in place. I recommend having each of the cables run down each different side of the glasses, which will help with balancing the weight. Next, download the Orloki 3D tracker front camera py file. Install any necessary dependencies and run it from your terminal. You can also download glphphere. py for the visualization, but the tracker will still run without it. On startup, you'll get a window asking whether you want to use a camera or video. For the glasses, select start camera. Reposition the camera to ensure your eye is in full view, and the eye tracking will self-calibrate to your eye position. Secondly, you need to calibrate the eye tracker to the front camera. You'll see a small red dot in the center of the screen. Align your head so the center of the image from the camera align with the center of the dot on your screen, like shown here. Press C, which will fix both the eye model and the relationship between the gaze camera and the scene camera. The little red dot will now follow your eye gaze and you're good to go. Though I still need to solve for a few more gaze parameters and implement a multi-point calibration. You can already easily build this and test it on your own. You can also join the channel to directly support this project and all parts are also available in the description. In a future video, I'm going to implement this on the Raspberry Pi so that you can have a completely mobile solution. Thanks for watching and stay tuned for updates.

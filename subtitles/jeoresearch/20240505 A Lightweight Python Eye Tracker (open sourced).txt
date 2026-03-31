@@ -1,0 +1,35 @@
+Title: A Lightweight Python Eye Tracker (open sourced)
+Date: 20240505
+Description:
+This is a lightweight eye tracker written in Python. It automatically detects the pupil and fits an ellipse after applying several different filtering and contour detection algorithms.  
+
+The code is open-sourced and can be found at the following GitHub repository: https://github.com/JEOresearch/EyeTracker/
+
+The camera and LEDs used to make this tracker are available via Amazon at the links below:
+  Spinel 720P Monochrome Camera OV9281: https://amzn.to/4jLQHAP
+  Basic Soldering kit: https://amzn.to/3QakEgh
+  3mm 940nm 1.2V Infrared LED: https://amzn.to/411g5er
+
+I'll continue to optimize this, so feel free to subscribe if you want to see the improved accuracy over time. 
+
+I also have a video that includes a code tutorial and explains all of the intermediary filtering steps: https://youtu.be/bL92JUBG8xw
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hey everyone. This is a lightweight eye 
+tracker written in Python that is open source. The green ellipse in the video is 
+fit as closely as possible to the pupil, and this is tested on some fairly difficult 
+benchmark videos with reflections, eyelashes, and pupil occlusions. The nice thing is that it's 
+only around 500 lines of code and can be run with just numpy and openCV. There's quite a bit going 
+on in the background that you don't see here, which I plan to go over in another video. 
+It's only one file so it should be pretty straightforward to use, but let me know if 
+you have any questions in the comments or feel free to post issues directly to the 
+GitHub. I'll continue to optimize this, so feel free to subscribe if you want to see the 
+improved accuracy over time. Thanks for watching.

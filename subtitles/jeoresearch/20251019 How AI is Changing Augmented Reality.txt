@@ -1,0 +1,19 @@
+Title: How AI is Changing Augmented Reality
+Date: 20251019
+Description:
+AI is redefining what’s possible in Augmented Reality. 
+
+By enabling scalable object detection on the Meta Quest 3, our research enables you to easily detect new objects that are not part of an original dataset like the one used to train YOLO. We can automatically generate labels, retrain an object detector in minutes, and provide visually stable augmentations, which we demonstrate for a language learning application. 
+
+This research is also useful for fields like manufacturing, repair, and aviation, which we are working on next. 
+
+Our paper can be found at the following link: [Link coming soon]
+
+Citation: Taheritajar, A., Benson, J., Gibson, A., Wilburn, B., Zhao, J. and Orlosky, J. (2025, October). Scalable Object Detection in Mixed Reality using Incremental Re-training and One-shot 3D Annotation. To appear in the Proceedings of the 2025 International Symposium on Mixed and Augmented Reality. IEEE.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+In this video, I'm going to show you a new form of AI that will change the way you use augmented reality. We've developed custom object detection that can recognize virtually anything in an augmented reality headset, like you see here in this language learning application. Now, if you've ever used object detection before, you know that you need hundreds, if not thousands of labeled images and hours or days of training to make the detection work. We've changed that. Let's take a look at the key technologies that make this work. Starting with what's called voxal selection. With a few clicks of your controller, you can select the object to be trained and give it a custom name. In the background, this starts an automatic data acquisition algorithm that pulls images from the front camera of your display. In this case, the MetaQuest 3. Normally, you'd spend hours manually drawing boxes and labeling hundreds of images. Instead, our system automatically labels and uploads the entire data set for you. However, just the fact that you have a new data set doesn't mean you can quickly train a new model. Training YOLO from scratch can take days. To solve this problem, we use what's called incremental learning. a form of AI that allows us to retrain just part of the model instead of the whole thing. With this approach, we can actually add new objects to the detector from inside the headset. Not only that, but we also have a really good way of making the resulting recognition stable and usable for things like language learning or training. If you use something like YOLO in every frame, you get these shaky, jittery results. However, by taking multiple frames and the positions of objects in 3D space into account, we get a very smooth, usable feel. Our next step is to adapt this to automotive maintenance, aviation, and manufacturing.

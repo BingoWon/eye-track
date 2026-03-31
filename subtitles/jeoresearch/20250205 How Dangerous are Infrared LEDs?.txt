@@ -1,0 +1,33 @@
+Title: How Dangerous are Infrared LEDs?
+Date: 20250205
+Description:
+This video provides an objective analysis of infrared LEDs in comparison with other common light sources. 
+
+More specifically, I use an infrared light meter to detect the irradiance of various light sources to determine whether they meet standard thresholds, which can give you a better idea of what type of LEDs might be safe for use in applications like eye tracking. The video also goes over the various factors that influence the power and output of an LED to help you build better infrared light systems.
+
+0:15 What is irradiance?
+0:39 IEC threshold for infrared exposure
+0:50 Low irradiance examples
+1:16 High irradiance examples
+2:00 LED comparisons
+2:40 Current (milliamps) demonstration [**correction: note that the values were 4mA and 100mA for the spinel and generic cameras when measured in series with the current meter]
+3:28 IR Torch
+3:50 List of all measure irradiance values
+
+All of the gadgets/parts in the video can be found on Amazon: 
+  Irradiance meter: https://amzn.to/4jCV4yy
+  Spinel OV9281 camera: https://amzn.to/4jLQHAP
+  940nm 3mm LED diodes: https://amzn.to/4hq1TS8
+  IR Torch: https://amzn.to/3Cs4Wdr
+  Multimeter: https://amzn.to/3WOu0SO
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+have you ever wondered whether infrared LEDs can be dangerous to your eyes in this video I'm going to measure the strength of different infrared LEDs compare those to some common light sources and explain how LEDs can become dangerous if you don't check for something important to start out we need to understand that irradiance is what makes infrared light bad for your eye this is basically the amount of heat that gets transferred to your eye which can be measured in watts per square meter I have an infrared Radiance meter here which will give us the radiance of any light source but how much is too much for an LED well there is a standard called IEC 62481 that provides guidance for evaluating the safety of lamp systems it specifies the limitation for infrared at 100 watts per square meter to give you an idea of how much this is let's first take a look at some regular light sources and see how close they are to this rating I have the meter set up here in a dark room which you can see has a near zero reading moving this to face my monitor measures about 1 per square meter which is well within the IEC threshold of 100 my fireplace is just a bit higher giving a rating of about 10 to 15 another scenario is indoors during the day with the blinds drawn which varied between about 3 and 10 still below the threshold however my kitchen was much higher than I expected with daylight coming into the room Radiance was between 50 and 120 which exceeds the IEC threshold so looking towards windows for a significant period of time could actually be D dangerous but how would direct sunlight compare to this let's go outside to find out in direct sunlight you can get over 3,000 watts per square meter more than 30 times the IEC standard even in indirect sunlight the rating can be up to several hundred which is a very good reason to wear sunglasses Outdoors now how do our infrared LEDs compare to these scenarios can they also be dangerous I'm first going to compare three types of LEDs that are powered by the spanel OV 9281 One camera module the first type is a focused LED which is very common and can be purchased cheaply online the second is a diffuse or flat top LED that I created using my belt sander to sand off the spherical Dome the last LED is also a flat top but I've applied a thin layer of white acrylic paint first is the Dom LED which at a distance of 5 cm is roughly 10 to 15 WT per square met the diffuse LED is less coming in at 3 to 4 WT per square met and the painted Flat Top is even lower coming in at only 1 to two all three of these LEDs are under the IEC threshold but note that moving them closer to the eye can increase the resulting Radiance however there is still one more very important factor that affects LED output power LEDs are current driven meaning their output directly corresponds to their input current this is a different camera module that is designed for use as a webcam let's take a look at the current passing through the LED on this camera in comparison with the OV 9281 I'm going to start with the OV 9281 which we can see here has a current of about 15 milliamps in comparison my other camera module has a whopping 120 milliamps as you might guess the corresponding Radiance has now jumped to over a 100 watts per square meter exceeding the IEC threshold other infrared LED products such as this IR torch can easily exceed this threshold and actually be similar to direct sunlight if they are too close to your eye so in conclusion while while the type of LED for example D diverse diffuse affects the output Radiance to some degree a much more important factor is the driving current of the system when building any system that produces infrared light be sure to measure both the current and the output of Radiance to make sure these meet standard thresholds I hope this was helpful to you and thanks for watching [Music]

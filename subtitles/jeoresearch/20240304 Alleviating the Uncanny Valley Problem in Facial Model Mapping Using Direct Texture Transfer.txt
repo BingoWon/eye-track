@@ -1,0 +1,18 @@
+Title: Alleviating the Uncanny Valley Problem in Facial Model Mapping Using Direct Texture Transfer
+Date: 20240304
+Description:
+Though facial models for telepresence have made significant
+progress in recent years, most model reconstruction techniques still
+suffer from artifacts or deficiencies that result in the uncanny valley
+problem when used for real-time communication. In this paper, we
+propose an optimized approach that makes use of direct texture transfer
+and reduces the inconsistencies present in many facial modeling
+algorithms. By mapping the source texture from a 2D image to a
+rough 3D facial mesh, detailed features are preserved, while still allowing
+a 3D perspective view of the face. Moreover, we accomplish
+this in real time with a single, monocular camera.
+
+========================================
+Subtitles:
+
+for telepresence applications recreating a 3D model of the human face is still difficult most 3D modeling approaches still have inconsistencies that result in The Uncanny Valley problem our work uses a technique that directly maps The Source texture to a course model we pull pixels directly from the source texture and align those pixels with a 3D model that is coarsely reconstructed from tensor flows media pipe output by doing so we are able to transfer the nuances of facial features that are often lost in most 3D modeling approaches here are some other examples of faces and expressions that highlight the potential of our method to accurately represent facial features in 3D finally here is a view from an HTC Vive Pro showing what the model looks like when used during a remote conversation the left pane shows the scene view with the camera from above and the right pane shows the view from the HTC Vive Pro with this direct texture transfer Technique we provide a simple way to accurately convey facial features which can help alleviate The Uncanny Valley problem in telepresence applications

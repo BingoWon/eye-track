@@ -1,0 +1,38 @@
+Title: How Pupil Fitting Works in Eye Tracking Algorithms
+Date: 20240602
+Description:
+Ever wondered how eye trackers pinpoint your eyes so accurately? In this video, I explain the algorithms behind the eye tracking technology used in virtual reality, health care, and other industries. 
+
+A camera and LEDs you can use to take this kind of footage can be found here:
+ - GC0308 Camera ($17): https://amzn.to/41x8p2W
+
+OR
+ - Spinel Camera (~$100): https://amzn.to/3D8faQB (price may vary)
+- 3mm 940nm 1.2V IR LEDs ($10): https://amzn.to/411g5er
+
+If you need an inexpensive DIY eye tracker for testing, check out this video: 
+https://youtu.be/8lZqCMRMtC8
+
+I answer three main questions in this video:
+
+1) How do you find the pupil in an image?
+2) How do you accurately determine its shape?
+3) How do you correctly fit an ellipse to that shape?
+
+By the end of this video, you'll have a comprehensive understanding of how pupil tracking works, backed by clear examples and open-source code (link below). And don't forget to stay tuned for the next video, where I'll explain 3D eye modeling, gaze vectors, and calibration!
+
+Thanks for watching!
+
+Code here: https://github.com/JEOresearch/EyeTracker
+Discord for questions: https://discord.gg/tqUzmrcJTy
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeoresearch #jeo #orlosky
+
+========================================
+Subtitles:
+
+how in the world do eye trackers find your eyes today I'm going to answer that question by revealing the algorithms behind the technology more specifically pupil ellipse fitting I'll talk about each step of the process and show specific examples of each algorithm in action so where do we start well there are really three primary questions we need to answer one how do you find the pupil in an image two once found how do you accurately determine it shape and three how do you correctly fit in ell lips to that shape first off our video has several examples of eyes and pupils that are difficult to track they have shadows Reflections and inclusions from eyelashes to help demonstrate how these algorithms work to find the pupil algorithmically we generally need to find the darkest most uniform patch of pixels in the entire image this is accomplished with Spar sampling to check pixels around points in the image and return the darkest of these values the points that are sampled are spaced apart by a few pixels to improve performance and what you're seeing now is a heat map that shows the relative darkness of patches in the image redder means darker and the final darkest point is highlighted by a large red dot now that we have a point on the pupil the more challenging step is to accurately determine the pupil Contour because of Reflections or occlusions this is still generally a difficult problem that researchers are still trying to solve today most algorithms start with something called binary thresholding which converts dark pixels below a threshold to one value and lighter pixels above that threshold to a different value typically Z or one however however as you can see here the pupil region is not often uniform due to changing angle or lighting conditions and you end up with only a small part of the pupil or inclusion of other things like eyelashes or the rims of glasses to solve this problem we're going to make use of what is called cascaded thresholding which selects the best thresholding values out of three options here you can see the three different windows that use increasingly relaxed threshold values to include more and more of the pup the base threshold values for each of these windows is determine using the value return from the darkest patch we had earlier but how do we determine which of these is best to do this we first need to determine which pupil most resembles an ellipse the next view shows what happens if we fit an ellipse to each of these binary images and overlay that ellipse back onto the original eye image if you look at the top left you'll see four different metrics for computing which threshold is most ellipse like I won't go into these into too much detail but the idea is to determine how many pixels on the pupil Contour fall under an ellipse fit to that Contour taking all of these metrics into account we select the best of the three thresholded images giving us a good estimate of pixels that represent the people but now we have to figure out which of the Contour pixels are actually part of the pupil lips which is no easy feat the answer lies in the fact that we've already identified a point inside the pupil if a contour point is correct it must form an elliptical shape I.E it will have to be concave relative to the center of the pupil consequently angles formed by the sets of points on the ellipse will be directed inwards towards the pupil Center not outwards into space if you look closely at the current view you can see that the algorithm is now evaluating sets of three points across the entire contour and Computing whether the angles formed point inwards or outwards inward points are kept while outward points are left out the result can be seen in this next view where the included points are highlighted in green and the original Contour is colored red in the background you can clearly see that the parts of the Contour is formed from Reflections or occlusions now have fewer points giving us a much better set of correct points with which to fit an ellipse and voila now we just fit an ellipse to the set of points using open CV's fit ellipse function and we have a very accurate pupil Center and ellipse though this process sums up pupil finding and ellipse fitting we're not done with the full eye tracking algorithm in my next video I'll go over 3D modeling gaze vectors and calibration thanks for watching

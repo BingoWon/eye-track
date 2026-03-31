@@ -1,0 +1,53 @@
+Title: Immersive Eye Tracking and Visualization in Virtual Reality
+Date: 20231006
+Description:
+This video introduces different ways to visualize eye tracking data in virtual reality, including heat maps, gaze path replay, and saccade/focal point plots. I talk about each of the different visualization techniques, which you can actually walk through in the virtual reality environment. This would be useful if you're doing any kind of research or application development on eye tracking. 
+
+Open sourced here: https://github.com/NuncObdurat/GazeVisualizer/
+
+The camera and LEDs used to make a DIY Eye tracker are available via Amazon at the links below:
+  Spinel 720P Monochrome Camera OV9281: https://amzn.to/4jLQHAP
+  Basic Soldering kit: https://amzn.to/3QakEgh
+  3mm 940nm 1.2V Infrared LED: https://amzn.to/411g5er
+
+These are affiliate links that help support the channel at no extra cost to you. The earnings go toward the development of open-source software and projects like this!
+
+Let me know if you have any questions!!
+
+0:13 Conventional heatmapping
+0:35 Heatmapping replay in dark mode
+1:00 Saccade / focus plot
+1:25 Saccade / focus plot replay in dark mode
+
+========================================
+Subtitles:
+
+Hey YouTube, Today I'm going to show you a couple 
+different ways of rendering eye tracking data in immersive virtual reality that includes heat 
+Maps, Focus maps, and a different way to play back your data in a way that maybe you haven't seen 
+before. What you're looking at here is a virtual reality environment, and I've got eye tracking 
+turned on. As soon as I hit the heat map button, you can see that wherever I look is turning a 
+heat map color. This starts with blue for just barely visualized, and it gets greener as you 
+look at it and as you continue to look it gets yellower and eventually red. That's a pretty 
+standard way to do gaze heat mapping. Now, here's where things start to get a little bit 
+interesting. I'm going to hit this button, and now you're going to see the heat map, but 
+you'll notice that it's not tracking with my eyes. What's actually happening here is that the 
+heat map you just saw previously was recorded, and it's being played back in real time. The other 
+cool thing is that this is completely immersive, so you can actually walk around inside your own 
+eye data and maybe notice tendencies that you wouldn't otherwise notice if the image in the 
+background were still there. So that was heat mapping. Now we're going to look at something 
+that's usually called a fixation map, gaze plot, or scan path plot. There are quite a few names 
+for it. Next you'll see that where I'm looking there are little yellow dots that are connected 
+by red lines. Those red lines are saccades, i.e., when my eyes saccade from one point to another. 
+The little yellow dots are focal points so when my eyes stop for a little bit to actually perceive 
+information. Finally, once I hit this button, and this is my personal favorite, you can 
+see that the saccades and focal points are being played played back to us in real time. 
+This is a bit different than the heat map, and the type of information that you can glean 
+from this pattern is different. So for example I'm now looking at the quote on the wall and you 
+can see from the left to right movements in my eyes it's pretty easy to tell that I'm reading 
+something right and then once I finish reading then I'll be going on to to the other pieces 
+of the paintings. You can see how I examine the paintings. It looks like from top to bottom and 
+this particular one from left to right, so this is gives you a little bit different of information 
+than the heat map and might allow you to glean some some other tendencies of the user. So that's 
+basically it! I hope this was useful. If you have any questions or suggestions feel free to leave 
+them in the comments and thanks for watching!

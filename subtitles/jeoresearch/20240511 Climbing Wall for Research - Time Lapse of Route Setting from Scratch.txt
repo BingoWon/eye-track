@@ -1,0 +1,19 @@
+Title: Climbing Wall for Research - Time Lapse of Route Setting from Scratch
+Date: 20240511
+Description:
+This is a custom climbing wall used for Augmented Reality research at Osaka University. It was built by the Ten-to climbing shop in Minoh, Japan. This video shows the route setting process from scratch as a timelapse. 
+
+Link to laboratory: 
+https://www.lab.ime.cmc.osaka-u.ac.jp/
+
+Paper from the climbing research: 
+https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10322172
+
+Kowada, T., Ratsamee, P., Yamamoto, G., Liu, C., & Uranishi, Y. (2023, October). Real-time Alert of Excessive Force Based on Forearm Muscle Activity for Wall Climbing. In 2023 IEEE International Symposium on Mixed and Augmented Reality Adjunct (ISMAR-Adjunct) (pp. 450-451). IEEE.
+
+Link to Ten-to climbing: https://goo.gl/maps/z8reqMBoWzbmoLga6
+
+========================================
+Subtitles:
+
+[No English subtitles available for this video]

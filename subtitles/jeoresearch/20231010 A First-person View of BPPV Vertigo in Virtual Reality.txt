@@ -1,0 +1,46 @@
+Title: A First-person View of BPPV Vertigo in Virtual Reality
+Date: 20231010
+Description:
+This video shows what  Benign Paroxysmal Positional Vertigo looks like from a first-person view so that you can recognize it if it every happens to you.  Approximately 1 in 15 people will get it at some point in their lives [1], an it is very frustrating if you don't understand what is happening. 
+
+Dramamine ($4) is available on Amazon and can help with vertigo quite a bit: https://amzn.to/428TPQl
+
+Affiliate links on this page help support the channel at no extra cost to you. As an Amazon Associate, I earn from qualifying purchases. All earnings go toward the development of open-source software and projects like this! 
+
+The source code and assets for this project in Unity can be found here: https://github.com/JEOresearch/vertigosimulator
+
+In 2017, I had a severe case of BPPV, and at the time, I thought I was having a heart attack. I basically freaked out before figuring out the next day that it was vertigo. I remember vomiting for almost 24 hours from the dizziness before I could get treated by a physical therapist. 
+
+A virtual rendering of my eyes is also shown in the bottom left to see how your eyes rotate. I have simulated three different levels, including mild, moderate, and extreme cases.  
+
+*Note that I am not a physician and this video is not intended to provide medical advice of any sort.
+
+[1] https://www.cuimc.columbia.edu/news/vertigo-explained-what-do-when-world-spinning
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hey YouTube. In this video I'm going 
+to show you exactly what it feels like to get benign paroxysmal positional vertigo.
+I've had it before, and it totally sucks. But, after watching this video, hopefully you'll 
+know how to recognize it if you get it. So what I've set up here is a virtual reality 
+environment with three different vertigo simulations. Now I'm going to hit the first 
+button, which is what you might experience if you have a very mild case of vertigo. You can 
+probably notice the room moving back and forth ever so slightly, but this is not enough to cause 
+nausea or make you vomit. You can barely even see anything happening to my eyes next however the 
+amplitude of the rotation is roughly going to be tripled now you would definitely start getting 
+dizzy feeling nauseous and possibly even vomit the feeling is really unpleasant sort of like 
+having food poisoning now you can start to see the beginnings of nystagmus which is the left and 
+right movement of your eyes that causes the world to spin around. This can go on for hours and even 
+days so at this point in time it's probably good to go see a physician. Now for the most extreme 
+case where you can really see lots of rotation. This is what would happen if you had really 
+severe vertigo and this is actually how the world appeared to me when I had it about 5 years 
+ago. One other thing I've added here is actually a small vertical rotation. Sometimes the eyes 
+aren't completely horizontal. It won't just be back and forth left and right but there will 
+actually be some diagonal or rotational movement of the eyes. I just remember this going on 
+for almost 24 hours and constantly vomiting and not having any energy because I couldn't 
+keep any food down. So that should give you a better idea of what vertigo looks like from 
+a first-person perspective and hopefully it'll help you recognize it if you do get it in the 
+future. Thanks for watching and have a great day.

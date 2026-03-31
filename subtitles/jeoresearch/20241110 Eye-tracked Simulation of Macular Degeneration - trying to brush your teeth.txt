@@ -1,0 +1,47 @@
+Title: Eye-tracked Simulation of Macular Degeneration - trying to brush your teeth
+Date: 20241110
+Description:
+In this video, I use eye-tracked augmented reality to simulate macular degeneration through the perspective of someone with the deficit. Here, I'm showing the everyday task of brushing my teeth, but there are quite a few challenges with doing so. I hope this will give you some perspective on what it actually feels like to have macular degeneration, and I plan to do a series on different everyday tasks. 
+
+If you have macular degeneration or a similar visual deficit yourself, what kind of differences in everyday activities do you experience?  
+
+Feel free to subscribe if you would like to see more, and drop me a message in the comments if you want me to try a particular task. 
+
+We also have some prior research in this area if you are interested:
+
+Orlosky, J., Bui, T., Winston, N., Jirau-Rosaly, W., & Brown, S. (2024, March). An Eye-Tracked XR Visual Deficit Simulation Suite for Ocular Disease Education and Assisted Diagnosis. In 2024 IEEE Conference on Virtual Reality and 3D User Interfaces Abstracts and Workshops (VRW) (pp. 1164-1165). IEEE.
+
+Alexander, D., Nguyen, T., Keller, P., Orlosky, J., Brown, S., Wood, E., Ezenwoye, O. and Jirau-Rosaly, W., 2020, March. Design of visual deficit simulation for integration into a geriatric physical diagnosis course. In 2020 IEEE Conference on Virtual Reality and 3D User Interfaces Abstracts and Workshops (VRW) (pp. 838-839). IEEE.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hey everybody. Today I want to show you what 
+it's like to have macular degeneration. What you're seeing right now is an augmented reality 
+simulation of macular degeneration. I really wanted to let you feel what this is like in 
+real life through the perspective of someone with the deficit. So now I'm going to try to 
+brush my teeth. Just a regular everyday task. But there are some weird difficulties with it 
+that I never experienced. Obviously I've never had macular degeneration before, but there's 
+some sort of interesting difficulties that I experienced for the first time that I want to 
+walk you through. And here you can see on the left macular degeneration and the right regular vision 
+what that looks like. So the first thing I really noticed was that instead of looking directly at 
+objects I tended to touch them with feel first, so like toothpaste I'm used to feeling I sort of know 
+where it is by by memory. Same with my toothbrush like instead of looking at the toothbrush I felt 
+the toothbrush to see which one was was the right one which bristles were correct. I could see this 
+being really hard if you had lots of different tubes or creams. Once I actually started brushing 
+that's it was normal there's nothing really out of the ordinary but um just looking at things like I 
+couldn't look at my face right. I couldn't see my face obviously I have an augmented reality device 
+on that's doing the simulation but not being able to look at yourself in the mirror uh or having to 
+look through your peripheral vision at yourself uh sort of a lower resolution version of yourself 
+is sort of a a weird feeling. And then and yeah just very little things like uh when you reach for 
+something if you don't know the exact position of it you have to feel around a little bit especially 
+for small things. Large objects you can sort of gauge the position through your peripheral 
+vision but like light switches, a toothbrush, etc. I would imagine like a sewing kit would be 
+quite difficult because you can't really pinpoint the exact location of the object other than 
+that large things so like washing washing up, moving the handle here wasn't too too bad, and 
+then drinking water and washing my face wasn't too bad either. So I really wanted you to see 
+what it's like from the perspective of someone with macular degeneration. I'll probably do a 
+series of these to show you different everyday activities so feel free to subscribe if you'd 
+like to see those and thank you for watching!

@@ -1,0 +1,31 @@
+Title: Eye tracking on a Raspberry Pi (with GPT Code)
+Date: 20241212
+Description:
+In this video, I demonstrate how to do eye tracking on a Raspberry Pi and explain why certain types of cameras can't be used for infrared eye tracking. I have also released the Python script for the Raspberry Pi eye tracker, which can be downloaded from my GitHub. Link below: 
+
+https://github.com/JEOresearch/EyeTracker/blob/main/OrloskyPupilDetectorRaspberryPi.py
+
+If you need an inexpensive camera to build your own eye tracker, see my DIY video here: 
+https://youtu.be/8lZqCMRMtC8
+
+Links to all the parts in this video are listed below: 
+
+Raspberry Pi 4B:
+https://amzn.to/4hrnLg6
+
+Spinel OV9281: 
+https://amzn.to/4jLQHAP
+
+(mini cam - does NOT work for IR eye tracking):
+https://amzn.to/3EsvLik
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+hi everyone today I want to show you how to get ey tracking working on the Raspberry Pi 4B I'll show you why you can't use this camera and why the red coding here is bad thing let's start off by looking at this small camera the arducam ov5647 mini camera module while this may look like a really cool small camera to use it has one flaw that prevents it from being used for eye tracking you'll see the problem once I remove the lens housing which will expose the IR filter some of you that are familiar with ey tracking probably already realized this but the infrared filter is actually bonded to the surface of the sensor on this module since we can't remove it without damaging the sensor we can't use it for infrared ey tracking the good news is since the Raspberry Pi supports USB camera interfaces we can use the spinel OV 9281 which I detail in my other video on building a DIY ey tracking camera to use this with a p it requires some heavily optimized code which I have just released on my GitHub repository Link in the description if you can further optimize this to get it running at 30 FPS or better please let me know in the Discord stay tuned for more projects like this and thanks for watching

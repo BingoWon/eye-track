@@ -1,0 +1,39 @@
+Title: Eye-tracked Simulation of Visual Deficits in Virtual Reality
+Date: 20230912
+Description:
+This video shows research from Augusta University to simulate visual deficits in Virtual Reality. We use eye tracking to accurately replicate the experience of Macular Degeneration, Diabetic Retinopathy, Cataracts, Color Blindness, Myopia (nearsightedness), and Hyperopia (farsightedness). 
+
+Our published work on this project can be found below: 
+https://www.researchgate.net/profile/Jason-Orlosky/publication/341314909
+
+Citation:
+Alexander, D., Nguyen, T., Keller, P., Orlosky, J., Brown, S., Wood, E., Ezenwoye, O. and Jirau-Rosaly, W., 2020, March. Design of visual deficit simulation for integration into a geriatric physical diagnosis course. In 2020 IEEE Conference on Virtual Reality and 3D User Interfaces Abstracts and Workshops (VRW) (pp. 838-839). IEEE.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hey YouTube, In this video I want to introduce 
+some of the work we did at Augusta University to simulate visual deficits. As you can see here, 
+this is macular degeneration, and what we're doing in the simulation is actually trying to improve 
+the way medical students go through physical diagnosis courses by letting them experience 
+what it's like to have visual impairments. So that was macular degeneration. We also have 
+diabetic retinopathy. And what you can notice in this video is the visual deficits will track with 
+your eyes, so we have eye tracking enabled here and you can see that when the eyes move around 
+the macular degeneration moves around with it. This really is good because you can't fake the 
+deficit since you can't move your head around. A lot of times the deficit will actually be a fixed 
+your head not to your eyes, so this makes it very realistic. I believe this is cataracts. 
+This shows what's like to have cataracts, and again this is actually in place in a course 
+at Augusta University. What the students are doing here is they're looking through several different 
+medications. Here you can see Metaformin, and their goal is to take the right correct amount of 
+a specific medication within a one minute period. Here you can see a picture on the wall, and you 
+can see the colors. Now we're going to test out color blindness, and you can see now the world 
+has changed. It's basically black and white, and you can see that picture on the wall 
+that was just colorful is no longer colorful. Lastly, we have nearsightedness, or myopia, 
+so now we can't see far. We can just see near, and if we need to pick up our medication 
+we have to bring it up very close. Lisinopril. Okay that's the right one. That's 
+what we need to take. And last but not least, we have far-sightedness. So now if we bring 
+the medication up close and try to look at it up close, we can't see it. So now we 
+have to take it a little bit farther away from us to be able to see it 
+and now we can see it. That's it.

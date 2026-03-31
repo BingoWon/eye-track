@@ -1,0 +1,36 @@
+Title: Simulation of Astigmatism in Virtual Reality
+Date: 20231107
+Description:
+This video shows what it's like to have astigmatism from a first-person view in virtual reality. I also built a custom control panel that allows you to change the strength and direction of the distortion, so this should give you a good idea of what having this deficit would feel like and how changes in the strength and direction would affect your vision.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hello YouTube. In this video, I'm going to show 
+you what it's like to have astigmatism. This is a custom application I developed in virtual reality 
+that lets you control the characteristics of the deficit and see those effects from a first-person 
+view. What I have on my left hand is a dial that allows you to modify both the strength and the 
+direction of the astigmatism by increasing the distance of this blue pointer from the center 
+of this panel. It will increase the strength of the astigmatism up to about five diopters, 
+and if I drag the pointer around the edge of the panel like so, it will also change the 
+direction. So we can do against the rule, with the rule, or oblique, which correspond to 
+horizontal, vertical, and diagonal distortions, I'll leave it at zero for now. On the wall, you 
+can see that the poster text is relatively clear and easy to read. If I put the strength at roughly 
+one diopter and leave the direction as horizontal you can see the text is still readable but 
+now slightly blurry. But if I increase the strength to about five diopters, which is pretty 
+extreme, now everything in the background is quite difficult to read. As I adjust the strength on 
+my left hand you can really see the effects of the distortion in the background. Now 
+if I change it to vertical distortion, i.e., with the rule, you can see that it's 
+somewhat better than against the rule. Again, here is against the rule versus with the 
+rule. If I put the pointer anywhere at the corners of the control panel, I now 
+have what's called oblique astigmatism, which is essentially diagonal distortion. One more 
+interesting side effect is that lights produce a sort of star bursting or streaking effect. 
+There's a light on the stand and two lights on the table in the background and if you look 
+at the lights in the background, as I increase the strength of the astigmatism you can see an 
+increase in the streaking effect. Additionally, as I move the direction of the astigmatism, you'll 
+see that the streaking effect rotates along with it. So this is basically what it feels like to 
+have astigmatism. If you're interested in other visual deficits, be sure to check out my other 
+videos simulating vertigo, macular degeneration, color blindness, and other types of conditions. 
+Thanks for watching, and have a great day!

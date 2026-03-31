@@ -1,0 +1,21 @@
+Title: Mitigation of VR Sickness during Locomotion with a Motion-Based Dynamic Vision Modulator
+Date: 20230613
+Description:
+This video summarizes our work in TVCG, which can be found at the link below: https://ieeexplore.ieee.org/abstract/document/9793626/
+
+Abstract: 
+In virtual reality, VR sickness resulting from continuous locomotion via controllers or joysticks is still a significant problem. In this paper, we present a set of algorithms to mitigate VR sickness that dynamically modulate the user’s field of view by modifying the contrast of the periphery based on movement, color, and depth. In contrast with previous work, this vision modulator is a shader that is triggered by specific motions known to cause VR sickness, such as acceleration, strafing, and linear velocity. Moreover, the algorithm is governed by delta velocity, delta angle, and average color of the view. We ran two experiments with different washout periods to investigate the effectiveness of dynamic modulation on the symptoms of VR sickness, in which we compared this approach against baseline and pitch-black field-of-view restrictors. Our first experiment made use of a just-noticeable-sickness design, which can be useful for building experiments with a short washout period.
+
+Bibtex entry:
+@article{zhao2022mitigation,
+  title={Mitigation of VR Sickness during Locomotion with a Motion-Based Dynamic Vision Modulator},
+  author={Zhao, Guanghan and Orlosky, Jason and Feiner, Steven and Ratsamee, Photchara and Uranishi, Yuki},
+  journal={IEEE transactions on visualization and computer graphics},
+  year={2022},
+  publisher={IEEE}
+}
+
+========================================
+Subtitles:
+
+[No English subtitles available for this video]

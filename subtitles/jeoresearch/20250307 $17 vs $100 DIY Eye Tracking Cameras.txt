@@ -1,0 +1,36 @@
+Title: $17 vs $100 DIY Eye Tracking Cameras
+Date: 20250307
+Description:
+This video compares two infrared eye tracking cameras, the $17 GC0308 and the $100 Spinel OV9281. Both can be used for DIY eye tracking applications, though they have slightly different characterstics and need different types of modifications to work. 
+
+The cameras in this video can be found on Amazon: 
+ - GC0308 Camera ($17): https://amzn.to/41x8p2W
+ - Spinel Camera (~$100): https://amzn.to/3D8faQB (price may vary)
+- Irradiance meter: https://amzn.to/4jCV4yy
+
+Other useful tools/supplies 
+ - USB Extension cable x2 ($8): https://amzn.to/4knyf1N 
+   (for extending GC0308 cable)
+ - Glue Gun ($3): https://amzn.to/41JalXn
+ - Glue Gun w 30x glue sticks ($10): https://amzn.to/4h49jcQ
+ - Dark paint ($5): https://amzn.to/43qC0NU
+
+
+This code will also run on the Raspberry Pi 4b:
+https://amzn.to/4hrnLg6
+
+Raspberry pi video here:
+https://youtu.be/apTlen7mkTg?si=OjtyNPpGMmrUN2Lq
+
+Instructions for the DIY Spinel setup as well as how to change the lens focus (@2:54) can be found in this video: https://youtu.be/8lZqCMRMtC8
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+in this video I'm going to compare these two DIY ey tracking cameras I'll show you how to solve some of the issues with the camera's LEDs and compare in contrast both the cameras and resulting eye tracking first off let's look at the GCO 308 which I'll just call the GC for short which is much smaller and Slimmer than the spanel despite being so small for only $17 there are a few minor issues with this form factor one is that the threading on the lens housing is a bit too short but the bigger problem is the location of the LEDs on this module because they are so close to the of the camera you get the red eye effect which prevents an accurate estimate of the pupil ellipse at some eye positions hopefully the manufacturer will place these farther away from the lens in future iterations but I do have an easy fix for this we're first going to add a small bit of hot glue to each led to further diffuse the light then we're going to paint the center of the glue with dark paint to prevent the center of the light source from shining directly in the eye which should still give us enough diffuse light for illumination here is the video after the glue and paint has been applied and you can see that the red eye effect is almost completely gone after this fix the radiance of the LEDs are under 1 watt per square meter for the GC and under two for the spanel both under the threshold for corneal exposure secondly the video quality for these two cameras is almost identical when I line them up on this quarter you can see that both images are fairly clear so this shouldn't affect eye tracking in any way as far as the ey tracking goes both of these cameras work quite well though the GC appears to have some very minor Distortion of the pupil ellipse due to the rolling shutter all in all I would say that the 17 $ GC performs almost as well as the $100 spanel with some minor modifications links for these cameras and tools can be found in the description as well as the open source code for running ey tracking thank you for watching and feel free to post any questions in the comments or on the Discord

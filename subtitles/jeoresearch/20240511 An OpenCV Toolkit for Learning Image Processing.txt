@@ -1,0 +1,47 @@
+Title: An OpenCV Toolkit for Learning Image Processing
+Date: 20240511
+Description:
+This toolkit is an interactive OpenCV tutorial that allows you to test different types of image processing. Whether you're a beginner or an advanced user, this tool is designed to help you understand various OpenCV functions. You can use a video from your local machine or connect to your webcam.
+
+I have included features such as Binary Thresholding, Canny Edge Detection, Gaussian Blur, Grayscale Conversion, Hough Line Transform, Contour Detection, Erosion, and Dilation. In addition, the respective parameters for each function are included as sliders, which allow you to change the video in output in real time. You can check the functions you want to activate, and they are applied in the order that you checked them. 
+
+The toolkit is open sourced and can be found at the GitHub link below. Happy testing!! 
+https://github.com/JEOresearch/OpenCVToolkit
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+Hello everybody. I just developed a new 
+tool in open CV. Actually this is in Python, and it is a toolkit that allows you to test 
+different open CV functions on this video here. This is Koro, my cat, and this video 
+in the background just loops right here, and there's a bunch of different functions. 
+So we have binary thresholding, Canny Edge detection gaussian blur, gray scale conversion, 
+Hoff line transform, contour detection, erosion, and dilation. And what you can do here is check 
+on or off any of these, so if I want to do Canny edge detection for example you can see exactly 
+what this does. Also note that if you use this without a video or if there's not a video at 
+the path specified in the Python script it will default to your webcam. And to the right of each 
+function is a slider that basically represents the parameters for each one. So I can for example 
+set the threshold one for Canny edge detection is going to give us more lines versus less lines 
+when the threshold is smaller. There's actually two that you can modify here so basically you 
+can check any of these, if you want to blur the image for example. The other thing is that you can 
+check them in order, so if I want to First apply let's say cany Edge detection and then blur it's 
+going to blur it after applying the detection, but if I do these in the opposite order, i.e., if 
+I blur and then apply cany Edge detection, I get a much different result. So this tool allows you 
+to really experiment with the different features of open CV and the different tools. So let's do 
+another one here. Let's do a grayscale conversion and then binary thresholds. I'm going to set that 
+to max value here. Let's give a little less, and then let's apply contour detection. So now we have 
+an outline of the kitty here. It's on and off and I can mess around with these, give more outlines, 
+less outlines, erosion for example which is designed to remove small things in the background 
+or dilation which is increases contours. So there's all these functions and you can mess with 
+these in any way you want so if you're writing a computer vision algorithm, if you're trying to 
+basically create some sort of image processing technique you can use this without having to code 
+each individual one to determine what your output is going to look like and you can mess so for 
+example here's the Hough line transform. You can mess with all the very specific parameters 
+so if I want longer lines for example here right and then I decrease the the gap between the 
+lines can mess with the uh the angles that I want to see the lines so let's say if I only 
+want to see vertical or horizontal lines I can mess with these right. Or the theta, so all these 
+parameters this will let you learn about the tools you want to work with and test things without 
+having to code them. Have fun! Again this is open source. The link is down in the description 
+below. Thanks for watching and have a great day!

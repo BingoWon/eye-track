@@ -1,0 +1,12 @@
+Title: Using Eye Tracking as a Privacy Screen in Virtual Reality
+Date: 20230729
+Description:
+This video shows how you can use eye tracking to hide text on a virtual window. You can read the text when looking at it, but nobody else can see it otherwise. Interestingly enough, it's possible to read the text normally despite most of the text in the background not being visible!  
+
+Code available here:
+https://github.com/NuncObdurat/eyetrackedprivacymonitor/
+
+========================================
+Subtitles:
+
+thank you

@@ -1,0 +1,28 @@
+Title: 3D Eye Tracking on a Webcam
+Date: 20250923
+Description:
+Open-sourced eye tracking for screen/cursor control using your webcam.
+
+This tool allows you to control your monitor with eye gaze. In the video, I explain how 3D eye tracking works on a webcam and how to use this code. I hope this will be useful for individuals with motor impairments or diseases like Parkinson's, Stroke, Cerebral Palsy, Multiple Schlerosis, ALS, PSP, or dystrophy and that it will improve access to eye tracking in general.
+
+The software is open-sourced at the link below: 
+https://github.com/JEOresearch/EyeTracker/tree/main/Webcam3DTracker
+
+I recommend the Brio 100 webcam since it's inexpensive ($30) and has a clear HD image, adequate resolution, and adjustable settings: 
+https://amzn.to/43of401
+
+Infrared pupil tracker setup: https://youtu.be/zuoOvywtwtA
+Infrared pupil tracking algorithm details: https://youtu.be/bL92JUBG8xw
+
+This project is still in the initial stages of development. Feel free to subscribe to the channel if you would like to see updates or join to directly support this project. Thanks for watching! 
+
+All YouTube earnings from this channel support the development of open-source software and projects like this!
+
+As an Amazon Associate, I earn from qualifying purchases. Affiliate links may appear on this page at no additional cost to you.
+
+#jeorsearch #jeo #orlosky #dr.o
+
+========================================
+Subtitles:
+
+For the past several months, I've been working on a new eye tracker in Python that lets you do eyetracking with your own webcam. I wanted to explain how the system works in more detail so you can better understand eyetracking in general and become more familiar with this code and its use. Let's first go over what is necessary for webcam based eye tracking to work. Simply put, you need to know where the eye centers are. Know the position of the center of the pupil or iris for each eye. Project a ray from each eye center through each pupil center. Compute the intersection of those rays. Use the resulting combined ray to associate your real monitor to a virtual monitor position. And finally, use multiple points on the monitor to determine your monitor size and virtual space. Let's go over each of these steps starting with the eye centers since you need these for all other computations. Though some algorithms like OpenCV's cascade classifier will let you detect eyes, we actually need the 3D position of the eye spheres. For this purpose, we're going to be using media pipe, which provides us with 468 facial landmarks from a single camera image. Now, Mediaipe doesn't inherently give us the eye center positions, but we can compute them using these landmarks. Though you might think you could just use the landmarks on the eyelids or other eye structures, it turns out that media pipe is inherently biased, meaning the resulting eye points shift upwards even when the eyes roll upwards. This is bad because it significantly skews the eye center positions upwards or downwards. My current solution to this problem is to use points from other stable or unbiased points on the face, primarily the nose. From these points, we can compute a coordinate system for the face using a reconstructed rotation matrix. During the calibration phase, the eye spheres are fixed to this face structure. However, we now need to determine where the pupil centers are relative to each eye center. If you're interested in learning how pupil fitting algorithms work, I have another video that explains how pupil centers are found in highfidelity infrared eye tracking. Fortunately, Mediaipe is fairly good at identifying the iris centers, even in non-infrared webcam images. The gaze rays that represent where you're looking are just the rays projected from each eye center through the corresponding pupil center. Now that we have these gaze rays, we just compute the intersection which results in this combined gaze ray you see here. Lastly, we need to associate this main gaze ray with our monitor. Currently, when you look at your screen center, my code aligns the virtual monitor with your gaze center. The last step in this process is the multipoint calibration. This allows us to bind the relative position of the cursor in a virtual environment to the physical position of our real monitor. I haven't quite completed the code for this, but I will definitely be posting an update in a video in the near future. Stay tuned and feel free to like and subscribe to help support open-source software like

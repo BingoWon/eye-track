@@ -1,0 +1,14 @@
+Title: Drumming with Shaders in Virtual Reality
+Date: 20231117
+Description:
+I build at VR environment that combines shaders, music, and interactive drumming. You can "play" each of the shaders in the room, changing their features based on each drum hit. This music is "Ant Fire" by Rachel K Collier. 
+
+Shader references: 
+https://www.shadertoy.com/view/mtyGWy
+https://www.shadertoy.com/view/tsXBzS
+https://www.shadertoy.com/view/tsXBzS
+
+========================================
+Subtitles:
+
+[No English subtitles available for this video]

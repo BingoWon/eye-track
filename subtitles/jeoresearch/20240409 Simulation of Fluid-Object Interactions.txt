@@ -1,0 +1,19 @@
+Title: Simulation of Fluid-Object Interactions
+Date: 20240409
+Description:
+Eighteen simulations of objects, fluids, and the interactions between them from SIGGRAPH 2023. 
+
+These came from the following papers: 
+
+Xie, T., Li, M., Yang, Y., & Jiang, C. (2023). A Contact Proxy Splitting Method for Lagrangian Solid-Fluid Coupling. ACM Transactions on Graphics (TOG), 42(4), 1-14.
+
+Li, W., & Desbrun, M. (2023). Fluid-Solid Coupling in Kinetic Two-Phase Flow Simulation. ACM Transactions on Graphics, 42(4), 1-14.
+
+Hang Yin, Mohammad Sina Nabizadeh, Baichuan Wu, Stephanie Wang, and Albert Chern. 2023. Fluid Cohomology. ACM Trans. Graph. 42, 4, Article 126 (August 2023), 25 pages. https://yhesper.github.io/fc23/fc23.html
+
+SIGGRAPH conference website - https://s2023.siggraph.org/
+
+========================================
+Subtitles:
+
+[No English subtitles available for this video]
