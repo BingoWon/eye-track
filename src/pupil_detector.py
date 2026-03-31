@@ -1,12 +1,12 @@
 """
-OrloskyPupilDetector – macOS Adapted
-=====================================
+OrloskyPupilDetector – Cross-Platform
+=======================================
 Full-featured 2D pupil detector with cascaded thresholding, concave angle
 filtering, and ellipse goodness scoring.
 
 Adapted from JEOresearch/EyeTracker (original by Jason Orlosky).
-All algorithmic logic is preserved; platform-specific code (DirectShow,
-Windows paths) has been replaced with cross-platform equivalents.
+All algorithmic logic is preserved. Supports macOS (AVFoundation),
+Windows (DirectShow), and Linux (V4L2) via automatic backend selection.
 """
 
 import cv2

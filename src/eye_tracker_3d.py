@@ -1,13 +1,13 @@
 """
-Orlosky3DEyeTracker – macOS Adapted
+Orlosky3DEyeTracker – Cross-Platform
 =====================================
 Real-time 3D eye tracking system. Detects the pupil via cascaded
 thresholding, estimates the 3D eye center from orthogonal ray
 intersections, and computes a 3D gaze direction vector.
 
 Adapted from JEOresearch/EyeTracker/3DTracker/Orlosky3DEyeTracker.py.
-All algorithmic logic is preserved; platform-specific code replaced
-with cross-platform equivalents.
+All algorithmic logic is preserved. Supports macOS, Windows, and Linux
+via automatic capture backend selection.
 """
 
 import cv2
@@ -564,7 +564,7 @@ def selection_gui():
 
     root = tk.Tk()
     root.title("Select Input Source")
-    tk.Label(root, text="Orlosky Eye Tracker 3D (macOS)", font=("Arial", 12, "bold")).pack(pady=10)
+    tk.Label(root, text="Orlosky Eye Tracker 3D", font=("Arial", 12, "bold")).pack(pady=10)
 
     tk.Label(root, text="Select Camera:").pack(pady=5)
 

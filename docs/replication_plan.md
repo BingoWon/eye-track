@@ -15,7 +15,7 @@ This document provides a comprehensive plan for replicating the 3D eye tracking 
 | Item | Notes |
 |------|-------|
 | **USB Extension Cable** | The GC0308 module ships with a short USB-A cable. An extension cable brings total reach to a comfortable length. |
-| **USB-A to USB-C Adapter** | For connecting to Mac mini (which primarily uses Type-C ports). USB 2.0 is sufficient — the 640x480 120FPS black-and-white data stream fits well within USB 2.0's 480Mbps bandwidth. |
+| **USB-A to USB-C Adapter** | Only needed if your machine exclusively has USB-C ports (e.g., modern Mac mini, some ultrabooks). USB 2.0 is sufficient — the 640x480 120FPS black-and-white data stream fits well within USB 2.0's 480Mbps bandwidth. |
 
 ### Mounting (Required for near-eye tracking)
 | Item | Notes |
@@ -67,29 +67,39 @@ The upstream `JEOresearch/EyeTracker` repository contains **5 independent sub-pr
 
 ---
 
-## 3. Adaptation Strategy for macOS
+## 3. Cross-Platform Adaptation Strategy
 
-The upstream code targets Windows exclusively (DirectShow APIs, MSMF capture backends, `C:\` paths). Our adapted version replaces all platform-specific code with cross-platform equivalents while preserving 100% of the algorithmic logic.
+The upstream code targets Windows exclusively (DirectShow APIs, MSMF capture backends, `C:\` paths). Our adapted version in `src/` replaces all platform-specific code with **automatic cross-platform equivalents** while preserving 100% of the algorithmic logic.
 
-Key changes:
-- Replace `cv2.CAP_DSHOW` / `cv2.CAP_MSMF` with `cv2.CAP_AVFOUNDATION` (macOS native)
-- Remove hardcoded Windows paths (`C:/...`)
-- Use `uv` with Python 3.14 for dependency management
-- Pin compatible package versions (especially numpy)
-- Replace `PyQt5` OpenGL with a macOS-compatible approach (PyQt5 + OpenGL still works on macOS but Apple has deprecated OpenGL — we handle this gracefully)
+### Capture Backend Auto-Selection
+| Platform | Backend | Constant |
+|----------|---------|----------|
+| **macOS** | AVFoundation | `cv2.CAP_AVFOUNDATION` |
+| **Windows** | DirectShow | `cv2.CAP_DSHOW` |
+| **Linux** | Video4Linux2 | `cv2.CAP_V4L2` |
+
+The function `_get_capture_backend()` detects `platform.system()` at runtime and returns the appropriate backend — no user configuration needed.
+
+### Other Cross-Platform Changes
+- Remove hardcoded Windows paths (`C:/...`) → use `os.path.join()` with relative paths
+- Make `tkinter` an optional import (unavailable on some Python builds)
+- Make OpenGL visualization optional with graceful degradation
+- Use `uv` for reproducible dependency management (Python 3.10+)
+- Pin minimum compatible package versions (`numpy>=1.26.0`, `opencv-python>=4.8.0`)
 
 ---
 
 ## 4. Implementation Phases
 
 ### Phase 1: Core 2D Pupil Detection ✅
-Adapt `OrloskyPupilDetector.py` to run on macOS with video file input (using included `eye_test.mp4`).
+Cross-platform `pupil_detector.py` — cascaded thresholding, concave angle filtering, ellipse goodness scoring. Verified with `eye_test.mp4`.
 
 ### Phase 2: 3D Gaze Tracking ✅
-Adapt `3DTracker/Orlosky3DEyeTracker.py` with full 3D gaze ray computation and `gaze_vector.txt` output.
+Cross-platform `eye_tracker_3d.py` — orthogonal ray intersections for 3D eye center, sphere-ray intersection for gaze vector, real-time `gaze_vector.txt` output.
 
-### Phase 3: OpenGL Visualization (Optional)
-Adapt `gl_sphere.py` for macOS OpenGL compatibility.
+### Phase 3: OpenGL Visualization ✅
+Cross-platform `gl_sphere.py` — wireframe eyeball rendering with gaze-driven rotation. Optional dependency; tracker works without it.
 
-### Phase 4: Hardware Integration
-Connect GC0308 camera and validate live tracking on Mac mini.
+### Phase 4: Hardware Integration 🔜
+Connect GC0308 camera and validate live tracking. The software auto-detects cameras on all platforms via `detect_cameras()`.
+
