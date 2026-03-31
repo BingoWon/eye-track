@@ -1,0 +1,5 @@
+.venv/
+*.pyc
+__pycache__/
+gaze_vector.txt
+output_video.mp4

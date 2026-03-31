@@ -1,0 +1,12 @@
+[project]
+name = "eye-tracking"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.4.4",
+    "opencv-python>=4.13.0.92",
+    "pyopengl>=3.1.10",
+    "pyqt5>=5.15.11",
+]
