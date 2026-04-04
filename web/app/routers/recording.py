@@ -55,6 +55,7 @@ async def recording_download() -> StreamingResponse:
     writer = csv.writer(buf)
     writer.writerow(
         [
+            "tracker_id",
             "timestamp",
             "fps",
             "confidence",
@@ -85,6 +86,7 @@ async def recording_download() -> StreamingResponse:
 
         writer.writerow(
             [
+                row.get("tracker_id"),
                 row.get("timestamp"),
                 row.get("fps"),
                 row.get("confidence"),

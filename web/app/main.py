@@ -19,9 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 from web.app.broadcast import broadcast_loop  # noqa: E402
-from web.app.camera import detect_cameras_safe  # noqa: E402
 from web.app.routers import cameras, recording, settings, ws  # noqa: E402
-from web.app.state import camera_mgr  # noqa: E402
+from web.app.state import registry  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -41,9 +40,8 @@ logger = logging.getLogger("eye-tracker")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: detect cameras but do NOT auto-open -- let the user choose
-    detected = detect_cameras_safe()
-    logger.info("Detected cameras: %s (waiting for user selection)", [c["name"] for c in detected])
+    # Startup: no auto-detection -- user selects cameras in the frontend
+    logger.info("Server starting (no cameras opened -- waiting for user selection)")
 
     broadcast_task = asyncio.create_task(broadcast_loop())
 
@@ -55,7 +53,7 @@ async def lifespan(app: FastAPI):
         await broadcast_task
     except asyncio.CancelledError:
         pass
-    camera_mgr.stop()
+    registry.stop_all()
     logger.info("Server shut down cleanly")
 
 

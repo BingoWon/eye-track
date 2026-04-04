@@ -9,8 +9,8 @@ from fastapi.responses import JSONResponse
 
 from web.app import state
 from web.app.state import (
-    camera_mgr,
     recording,
+    registry,
     settings,
     ws_clients,
 )
@@ -67,11 +67,19 @@ async def toggle_pause(body: dict) -> JSONResponse:
 @router.get("/status")
 async def get_status() -> JSONResponse:
     """Return current tracking status."""
+    trackers_info = [
+        {
+            "id": t.id,
+            "cameraIndex": t.camera_index,
+            "running": t.camera.is_running,
+            "cameraFps": round(t.camera.camera_fps, 1),
+        }
+        for t in registry.trackers.values()
+    ]
     return JSONResponse(
         {
-            "cameraIndex": camera_mgr.camera_index,
-            "cameraRunning": camera_mgr.is_running,
-            "cameraFps": round(camera_mgr.camera_fps, 1),
+            "trackerCount": len(registry.trackers),
+            "trackers": trackers_info,
             "streamFps": settings.stream_fps,
             "connectedClients": len(ws_clients),
             "recording": recording.active,

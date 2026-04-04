@@ -7,7 +7,7 @@ import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from web.app.state import camera_mgr, settings, ws_clients
+from web.app.state import registry, settings, ws_clients
 
 logger = logging.getLogger("eye-tracker")
 
@@ -20,15 +20,22 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     ws_clients.add(ws)
     logger.info("WebSocket client connected (%d total)", len(ws_clients))
 
-    # Send initial status
+    # Send initial status with list of active trackers
     try:
+        trackers_info = [
+            {
+                "id": t.id,
+                "cameraIndex": t.camera_index,
+                "running": t.camera.is_running,
+                "cameraFps": round(t.camera.camera_fps, 1),
+            }
+            for t in registry.trackers.values()
+        ]
         await ws.send_text(
             json.dumps(
                 {
                     "type": "status",
-                    "cameraIndex": camera_mgr.camera_index,
-                    "cameraRunning": camera_mgr.is_running,
-                    "cameraFps": round(camera_mgr.camera_fps, 1),
+                    "trackers": trackers_info,
                     "streamFps": settings.stream_fps,
                 }
             )

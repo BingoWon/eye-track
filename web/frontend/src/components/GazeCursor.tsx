@@ -1,11 +1,9 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { type CalibrationResult, applyCalibration, smoothPosition } from "../lib/calibration";
-import type { TrackingData } from "../types/tracking";
+import { smoothPosition } from "../lib/calibration";
 
 interface GazeCursorProps {
-	tracking: TrackingData | null;
-	calibration: CalibrationResult | null;
+	gazePosition: [number, number] | null; // screen-space 0-1, already fused
 	visible: boolean;
 }
 
@@ -14,7 +12,7 @@ const TRAIL_LIFETIME_MS = 600;
 
 type TrailPoint = { x: number; y: number; time: number };
 
-export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) {
+export function GazeCursor({ gazePosition, visible }: GazeCursorProps) {
 	const prevSmoothed = useRef<[number, number] | null>(null);
 	const trailRef = useRef<TrailPoint[]>([]);
 	const [cursor, setCursor] = useState<[number, number] | null>(null);
@@ -22,18 +20,18 @@ export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) 
 
 	// Prune expired trail dots on a timer
 	useEffect(() => {
-		if (!visible || !calibration) return;
+		if (!visible || !gazePosition) return;
 		const id = setInterval(() => {
 			const now = Date.now();
 			trailRef.current = trailRef.current.filter((p) => now - p.time < TRAIL_LIFETIME_MS);
 			setTrail([...trailRef.current]);
 		}, 50);
 		return () => clearInterval(id);
-	}, [visible, calibration]);
+	}, [visible, gazePosition]);
 
-	// Process tracking data with velocity-adaptive smoothing
+	// Process gaze position with velocity-adaptive smoothing
 	useEffect(() => {
-		if (!visible || !calibration || !tracking?.pupil?.center) {
+		if (!visible || !gazePosition) {
 			prevSmoothed.current = null;
 			trailRef.current = [];
 			setCursor(null);
@@ -41,8 +39,7 @@ export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) 
 			return;
 		}
 
-		const raw = applyCalibration(tracking.pupil.center, calibration);
-		const smoothed = smoothPosition(raw, prevSmoothed.current);
+		const smoothed = smoothPosition(gazePosition, prevSmoothed.current);
 		prevSmoothed.current = smoothed;
 
 		const px = Math.max(0, Math.min(window.innerWidth, smoothed[0] * window.innerWidth));
@@ -56,9 +53,9 @@ export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) 
 			trailRef.current = trailRef.current.slice(-TRAIL_MAX);
 		}
 		setTrail([...trailRef.current]);
-	}, [tracking, calibration, visible]);
+	}, [gazePosition, visible]);
 
-	if (!visible || !calibration || !cursor) return null;
+	if (!visible || !cursor) return null;
 
 	const [cx, cy] = cursor;
 	const now = Date.now();
@@ -110,7 +107,13 @@ export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) 
 				/>
 				<div
 					className="absolute rounded-full"
-					style={{ width: 6, height: 6, left: 9, top: 9, backgroundColor: "var(--color-accent)" }}
+					style={{
+						width: 6,
+						height: 6,
+						left: 9,
+						top: 9,
+						backgroundColor: "var(--color-accent)",
+					}}
 				/>
 			</motion.div>
 		</div>

@@ -24,6 +24,7 @@ interface HeaderProps {
 	calibration?: CalibrationResult | null;
 	showGazeCursor?: boolean;
 	paused?: boolean;
+	trackerCount?: number;
 	onCalibrateClick?: () => void;
 	onToggleGazeCursor?: () => void;
 	onTogglePause?: () => void;
@@ -147,6 +148,7 @@ export function Header({
 	calibration,
 	showGazeCursor,
 	paused,
+	trackerCount,
 	onCalibrateClick,
 	onToggleGazeCursor,
 	onTogglePause,
@@ -194,6 +196,11 @@ export function Header({
 						Platform
 					</span>
 				</div>
+				{trackerCount != null && trackerCount > 0 && (
+					<span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20">
+						{trackerCount} {trackerCount === 1 ? "Tracker" : "Trackers"}
+					</span>
+				)}
 			</div>
 
 			{/* Center: View mode tabs */}

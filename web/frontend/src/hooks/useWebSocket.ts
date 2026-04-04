@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ServerMessage, TrackingData } from "../types/tracking";
+import type { ServerMessage, TrackerFrame } from "../types/tracking";
 
 interface UseWebSocketOptions {
 	url: string;
-	onFrame?: (image: string, tracking: TrackingData) => void;
+	onFrame?: (trackers: TrackerFrame[]) => void;
 	onStatus?: (status: any) => void;
 }
 
@@ -34,7 +34,7 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 			try {
 				const msg: ServerMessage = JSON.parse(event.data);
 				if (msg.type === "frame") {
-					onFrameRef.current?.(msg.image, msg.tracking);
+					onFrameRef.current?.(msg.trackers);
 				} else if (msg.type === "status") {
 					onStatusRef.current?.(msg);
 				}

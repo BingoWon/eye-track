@@ -18,10 +18,16 @@ export interface TrackingData {
 	timestamp: number;
 }
 
-export interface FrameMessage {
-	type: "frame";
+export interface TrackerFrame {
+	id: string;
+	cameraIndex: number;
 	image: string;
 	tracking: TrackingData;
+}
+
+export interface FrameMessage {
+	type: "frame";
+	trackers: TrackerFrame[];
 }
 
 export interface StatusMessage {
