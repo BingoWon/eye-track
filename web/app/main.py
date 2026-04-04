@@ -18,8 +18,8 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
-from src.eye_tracker_3d import detect_cameras  # noqa: E402
 from web.app.broadcast import broadcast_loop  # noqa: E402
+from web.app.camera import detect_cameras_safe  # noqa: E402
 from web.app.routers import cameras, recording, settings, ws  # noqa: E402
 from web.app.state import camera_mgr  # noqa: E402
 
@@ -42,8 +42,8 @@ logger = logging.getLogger("eye-tracker")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: detect cameras but do NOT auto-open -- let the user choose
-    detected = detect_cameras()
-    logger.info("Detected cameras: %s (waiting for user selection)", detected)
+    detected = detect_cameras_safe()
+    logger.info("Detected cameras: %s (waiting for user selection)", [c["name"] for c in detected])
 
     broadcast_task = asyncio.create_task(broadcast_loop())
 

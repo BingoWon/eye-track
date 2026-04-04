@@ -8,8 +8,7 @@ import io
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from src.eye_tracker_3d import detect_cameras
-from web.app.camera import capture_preview
+from web.app.camera import capture_preview, detect_cameras_safe
 from web.app.state import camera_mgr, tracking_state
 
 router = APIRouter(prefix="/api", tags=["cameras"])
@@ -17,9 +16,9 @@ router = APIRouter(prefix="/api", tags=["cameras"])
 
 @router.get("/cameras")
 async def list_cameras() -> JSONResponse:
-    """List available camera indices (runs detection in a thread to avoid blocking)."""
+    """List available cameras without opening them (no iPhone beep)."""
     loop = asyncio.get_event_loop()
-    cameras = await loop.run_in_executor(None, detect_cameras)
+    cameras = await loop.run_in_executor(None, detect_cameras_safe)
     return JSONResponse(
         {
             "cameras": cameras,

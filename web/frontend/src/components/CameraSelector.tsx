@@ -8,6 +8,7 @@ interface CameraSelectorProps {
 
 interface CameraInfo {
 	index: number;
+	name: string;
 	previewUrl: string;
 	loading: boolean;
 	error: boolean;
@@ -34,8 +35,9 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 			const res = await fetch("/api/cameras");
 			const data = await res.json();
 			setServerReachable(true);
-			const cams: CameraInfo[] = (data.cameras as number[]).map((index) => ({
-				index,
+			const cams: CameraInfo[] = (data.cameras as { index: number; name: string }[]).map((cam) => ({
+				index: cam.index,
+				name: cam.name,
 				previewUrl: "",
 				loading: true,
 				error: false,
@@ -262,7 +264,7 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 								<div className="relative z-10 px-3.5 py-2.5 flex items-center justify-between bg-[var(--color-bg-card)]">
 									<div>
 										<p className="text-[13px] font-medium text-[var(--color-text-primary)]">
-											Camera {cam.index}
+											{cam.name}
 										</p>
 										<p className="text-[11px] text-[var(--color-text-muted)]">640 x 480</p>
 									</div>

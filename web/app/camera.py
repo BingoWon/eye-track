@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import platform
+import subprocess
 import threading
 import time
 from typing import Optional
@@ -14,6 +16,55 @@ import numpy as np
 from src.pupil_detector import _get_capture_backend, crop_to_aspect_ratio
 
 logger = logging.getLogger("eye-tracker")
+
+
+def detect_cameras_safe() -> list[dict]:
+    """Detect available cameras WITHOUT opening them.
+
+    On macOS, uses system_profiler to list cameras non-intrusively
+    (avoids triggering iPhone Continuity Camera beep).
+    On other platforms, falls back to OpenCV probe.
+
+    Returns a list of dicts: [{"index": 0, "name": "FaceTime HD Camera"}, ...]
+    """
+    system = platform.system()
+
+    if system == "Darwin":
+        return _detect_cameras_macos()
+
+    # Fallback: OpenCV probe (Windows/Linux)
+    from src.eye_tracker_3d import detect_cameras as _opencv_detect
+
+    indices = _opencv_detect()
+    return [{"index": i, "name": f"Camera {i}"} for i in indices]
+
+
+def _detect_cameras_macos() -> list[dict]:
+    """Use system_profiler to list cameras on macOS without opening them."""
+    try:
+        result = subprocess.run(
+            ["system_profiler", "SPCameraDataType", "-json"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode != 0:
+            logger.warning("system_profiler failed: %s", result.stderr)
+            return []
+
+        data = json.loads(result.stdout)
+        cameras_raw = data.get("SPCameraDataType", [])
+
+        cameras = []
+        for i, cam in enumerate(cameras_raw):
+            name = cam.get("_name", f"Camera {i}")
+            cameras.append({"index": i, "name": name})
+
+        return cameras
+
+    except Exception as e:
+        logger.warning("Failed to detect cameras via system_profiler: %s", e)
+        return []
 
 
 class CameraManager:
