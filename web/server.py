@@ -729,8 +729,9 @@ async def websocket_endpoint(ws: WebSocket) -> None:
 
 @app.get("/api/cameras")
 async def list_cameras() -> JSONResponse:
-    """List available camera indices."""
-    cameras = detect_cameras()
+    """List available camera indices (runs detection in a thread to avoid blocking)."""
+    loop = asyncio.get_event_loop()
+    cameras = await loop.run_in_executor(None, detect_cameras)
     return JSONResponse(
         {
             "cameras": cameras,
@@ -739,33 +740,47 @@ async def list_cameras() -> JSONResponse:
     )
 
 
+_preview_lock = threading.Lock()
+
+
+def _capture_preview(index: int) -> Optional[bytes]:
+    """Capture a single preview frame from a camera (blocking, thread-safe)."""
+    with _preview_lock:
+        backend = _get_capture_backend()
+        cap = cv2.VideoCapture(index, backend)
+        if not cap.isOpened():
+            return None
+
+        # Grab a few frames to let auto-exposure settle
+        for _ in range(5):
+            cap.read()
+        ret, frame = cap.read()
+        cap.release()
+
+        if not ret or frame is None:
+            return None
+
+        frame = cv2.flip(frame, 0)
+        frame = crop_to_aspect_ratio(frame)
+
+        ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        if not ok:
+            return None
+
+        return buf.tobytes()
+
+
 @app.get("/api/cameras/{index}/preview")
 async def camera_preview(index: int) -> StreamingResponse:
-    """Capture a single frame from the specified camera and return as JPEG.
-    This briefly opens the camera, grabs a frame, and releases it."""
-    backend = _get_capture_backend()
-    cap = cv2.VideoCapture(index, backend)
-    if not cap.isOpened():
-        return JSONResponse({"error": f"Cannot open camera {index}"}, status_code=400)
+    """Capture a single frame from the specified camera and return as JPEG."""
+    loop = asyncio.get_event_loop()
+    jpeg_bytes = await loop.run_in_executor(None, _capture_preview, index)
 
-    # Grab a few frames to let auto-exposure settle
-    for _ in range(5):
-        cap.read()
-    ret, frame = cap.read()
-    cap.release()
-
-    if not ret or frame is None:
-        return JSONResponse({"error": "Failed to capture frame"}, status_code=500)
-
-    frame = cv2.flip(frame, 0)
-    frame = crop_to_aspect_ratio(frame)
-
-    ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-    if not ok:
-        return JSONResponse({"error": "Failed to encode frame"}, status_code=500)
+    if jpeg_bytes is None:
+        return JSONResponse({"error": f"Cannot capture from camera {index}"}, status_code=400)
 
     return StreamingResponse(
-        io.BytesIO(buf.tobytes()),
+        io.BytesIO(jpeg_bytes),
         media_type="image/jpeg",
         headers={"Cache-Control": "no-cache"},
     )

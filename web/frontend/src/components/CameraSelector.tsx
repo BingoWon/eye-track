@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, ChevronRight, Loader2, RefreshCw, Wifi } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface CameraSelectorProps {
 	onSelect: (cameraIndex: number) => void;
@@ -18,13 +18,22 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 	const [detecting, setDetecting] = useState(true);
 	const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 	const [connecting, setConnecting] = useState(false);
+	const [serverReachable, setServerReachable] = useState(true);
+	const retryTimerRef = useRef<number>(0);
 
 	const detectCameras = useCallback(async () => {
 		setDetecting(true);
-		setCameras([]);
+		// Revoke old preview blob URLs to prevent memory leaks
+		setCameras((prev) => {
+			for (const c of prev) {
+				if (c.previewUrl) URL.revokeObjectURL(c.previewUrl);
+			}
+			return [];
+		});
 		try {
 			const res = await fetch("/api/cameras");
 			const data = await res.json();
+			setServerReachable(true);
 			const cams: CameraInfo[] = (data.cameras as number[]).map((index) => ({
 				index,
 				previewUrl: "",
@@ -32,6 +41,16 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 				error: false,
 			}));
 			setCameras(cams);
+
+			if (cams.length === 0) {
+				// No cameras found — schedule auto-retry in 3 seconds
+				clearTimeout(retryTimerRef.current);
+				retryTimerRef.current = window.setTimeout(() => {
+					detectCameras();
+				}, 3000);
+				setDetecting(false);
+				return;
+			}
 
 			// Load previews sequentially to avoid opening multiple cameras at once
 			for (const cam of cams) {
@@ -57,7 +76,12 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 				}
 			}
 		} catch {
-			// Server not reachable
+			setServerReachable(false);
+			// Server not reachable — retry in 3 seconds
+			clearTimeout(retryTimerRef.current);
+			retryTimerRef.current = window.setTimeout(() => {
+				detectCameras();
+			}, 3000);
 		} finally {
 			setDetecting(false);
 		}
@@ -65,6 +89,7 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 
 	useEffect(() => {
 		detectCameras();
+		return () => clearTimeout(retryTimerRef.current);
 	}, [detectCameras]);
 
 	const handleConfirm = async () => {
@@ -148,13 +173,20 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 								exit={{ opacity: 0 }}
 								className="col-span-full flex flex-col items-center py-16 gap-3"
 							>
-								<Wifi className="w-8 h-8 text-[var(--color-text-muted)]" />
+								{serverReachable ? (
+									<Camera className="w-8 h-8 text-[var(--color-text-muted)]" />
+								) : (
+									<Wifi className="w-8 h-8 text-[var(--color-danger)]" />
+								)}
 								<p className="text-[14px] text-[var(--color-text-secondary)]">
-									No cameras detected
+									{serverReachable ? "No cameras detected" : "Server not reachable"}
 								</p>
 								<p className="text-[12px] text-[var(--color-text-muted)]">
-									Connect a camera and click Refresh
+									{serverReachable
+										? "Connect a camera — auto-retrying..."
+										: "Start the backend server first"}
 								</p>
+								<Loader2 className="w-4 h-4 text-[var(--color-text-muted)] animate-spin mt-1" />
 							</motion.div>
 						)}
 						{cameras.map((cam, i) => (
