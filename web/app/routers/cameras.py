@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-import io
+from io import BytesIO
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -37,7 +37,7 @@ async def camera_preview(index: int) -> StreamingResponse:
         return JSONResponse({"error": f"Cannot capture from camera {index}"}, status_code=400)
 
     return StreamingResponse(
-        io.BytesIO(jpeg_bytes),
+        BytesIO(jpeg_bytes),
         media_type="image/jpeg",
         headers={"Cache-Control": "no-cache"},
     )

@@ -19,33 +19,29 @@ logger = logging.getLogger("eye-tracker")
 
 router = APIRouter(prefix="/api", tags=["settings"])
 
-SETTINGS_BOUNDS: dict[str, tuple[int, int]] = {
-    "threshold_strict": (1, 50),
-    "threshold_medium": (1, 50),
-    "threshold_relaxed": (1, 50),
-    "mask_size": (50, 500),
-    "stream_fps": (1, 120),
-    "jpeg_quality": (10, 100),
+# (min, max, type)
+SETTINGS_SCHEMA: dict[str, tuple[str, float, float, type]] = {
+    "thresholdStrict": ("threshold_strict", 1, 50, int),
+    "thresholdMedium": ("threshold_medium", 1, 50, int),
+    "thresholdRelaxed": ("threshold_relaxed", 1, 50, int),
+    "maskSize": ("mask_size", 50, 500, int),
+    "streamFps": ("stream_fps", 1, 120, int),
+    "jpegQuality": ("jpeg_quality", 10, 100, int),
+    "minConfidence": ("min_confidence", 0.0, 1.0, float),
+    "eyeCenterAlpha": ("eye_center_alpha", 0.005, 0.2, float),
 }
 
 
 @router.post("/settings")
 async def update_settings(body: dict) -> JSONResponse:
     """Update tracking parameters at runtime."""
-    mapping = {
-        "thresholdStrict": "threshold_strict",
-        "thresholdMedium": "threshold_medium",
-        "thresholdRelaxed": "threshold_relaxed",
-        "maskSize": "mask_size",
-        "streamFps": "stream_fps",
-        "jpegQuality": "jpeg_quality",
-    }
     updated = {}
-    for key, attr in mapping.items():
+    for key, (attr, lo, hi, typ) in SETTINGS_SCHEMA.items():
         if key in body:
-            val = int(body[key])
-            lo, hi = SETTINGS_BOUNDS.get(attr, (val, val))
+            val = typ(body[key])
             val = max(lo, min(hi, val))
+            if typ is int:
+                val = int(val)
             setattr(settings, attr, val)
             updated[key] = val
 

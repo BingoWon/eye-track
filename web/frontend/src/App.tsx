@@ -26,6 +26,7 @@ export default function App() {
 	const [showCalibration, setShowCalibration] = useState(false);
 	const [showGazeCursor, setShowGazeCursor] = useState(false);
 	const [paused, setPaused] = useState(false);
+	const manuallyPausedRef = useRef(false);
 	const pausedBeforeCalibrationRef = useRef(false);
 	const {
 		currentData,
@@ -53,13 +54,17 @@ export default function App() {
 		}).catch(() => {});
 	}, []);
 
-	// Auto-pause when tab is hidden, resume when visible
+	// Auto-pause when tab is hidden — but respect manual pause
 	useEffect(() => {
 		const handleVisibility = () => {
 			if (document.hidden) {
+				// Always pause when tab hidden
 				setPausedAndSync(true);
 			} else {
-				setPausedAndSync(false);
+				// Only resume if user didn't manually pause
+				if (!manuallyPausedRef.current) {
+					setPausedAndSync(false);
+				}
 			}
 		};
 		document.addEventListener("visibilitychange", handleVisibility);
@@ -105,8 +110,28 @@ export default function App() {
 		clearHistory();
 	};
 
+	const isFullscreenView = viewMode === "heatmap" || viewMode === "trail";
+
 	return (
-		<div className="h-screen flex flex-col">
+		<div className="h-screen relative overflow-hidden">
+			{/* Fullscreen views render behind the header */}
+			{isFullscreenView && (
+				<div className="absolute inset-0 z-0">
+					{viewMode === "heatmap" && (
+						<GazeHeatmap
+							history={history}
+							historyVersion={historyVersion}
+							onClear={clearHistory}
+							calibration={calibration}
+						/>
+					)}
+					{viewMode === "trail" && (
+						<GazeTrail history={history} tracking={currentData} calibration={calibration} />
+					)}
+				</div>
+			)}
+
+			{/* Header always on top */}
 			<Header
 				connectionStatus={connectionStatus}
 				viewMode={viewMode}
@@ -118,11 +143,16 @@ export default function App() {
 				paused={paused}
 				onCalibrateClick={() => setShowCalibration(true)}
 				onToggleGazeCursor={() => setShowGazeCursor((v) => !v)}
-				onTogglePause={() => setPausedAndSync(!paused)}
+				onTogglePause={() => {
+					const next = !paused;
+					manuallyPausedRef.current = next;
+					setPausedAndSync(next);
+				}}
 			/>
 
-			<main className={`flex-1 overflow-hidden ${viewMode === "dashboard" ? "p-3" : ""}`}>
-				{viewMode === "dashboard" && (
+			{/* Dashboard view */}
+			{viewMode === "dashboard" && (
+				<main className="flex-1 overflow-hidden p-3" style={{ height: "calc(100vh - 52px)" }}>
 					<div
 						className={`h-full grid gap-3 ${
 							expandedPanel ? "grid-cols-1 grid-rows-1" : "grid-cols-2 grid-rows-2"
@@ -162,19 +192,8 @@ export default function App() {
 							/>
 						)}
 					</div>
-				)}
-				{viewMode === "heatmap" && (
-					<GazeHeatmap
-						history={history}
-						historyVersion={historyVersion}
-						onClear={clearHistory}
-						calibration={calibration}
-					/>
-				)}
-				{viewMode === "trail" && (
-					<GazeTrail history={history} tracking={currentData} calibration={calibration} />
-				)}
-			</main>
+				</main>
+			)}
 
 			{/* Calibration overlay */}
 			<CalibrationWizard

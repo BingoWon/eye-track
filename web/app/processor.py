@@ -9,7 +9,6 @@ from typing import Optional
 import cv2
 import numpy as np
 
-from src.eye_tracker_3d import compute_average_intersection, update_and_average_point
 from src.pupil_detector import (
     apply_binary_threshold,
     check_contour_pixels,
@@ -63,6 +62,9 @@ class FrameProcessor:
         ellipse, confidence = self._detect_pupil(
             thresh_strict, thresh_medium, thresh_relaxed, frame, gray_frame
         )
+
+        # Filter out blinks and outlier detections
+        ellipse, confidence = self._validate_detection(ellipse, confidence)
 
         # Compute 2D eye center from ray intersections
         model_center_average = self._compute_eye_center(frame, ellipse)
@@ -119,47 +121,109 @@ class FrameProcessor:
 
         if optimized and not isinstance(optimized[0], list) and len(optimized[0]) > 5:
             ellipse = cv2.fitEllipse(optimized[0])
-            # Confidence: normalize goodness to 0-1 range (heuristic)
-            # Heuristic: goodness values typically range 0–1e8 for well-fitted ellipses
-            confidence = min(1.0, best_goodness / 1e8) if best_goodness > 0 else 0.0
+            # Confidence: normalize goodness to 0-1 range
+            # Goodness values typically range 1e3–1e5 for well-fitted ellipses
+            confidence = min(1.0, best_goodness / 1e5) if best_goodness > 0 else 0.0
             return ellipse, confidence
 
         return None, 0.0
 
+    def _validate_detection(
+        self, ellipse: Optional[tuple], confidence: float
+    ) -> tuple[Optional[tuple], float]:
+        """Reject low-confidence detections (blinks, occlusions, etc.)."""
+        if ellipse is None:
+            return None, 0.0
+        if confidence < self.settings.min_confidence:
+            return None, 0.0
+        return ellipse, confidence
+
+    # Minimum angle difference (degrees) between two ellipses for a
+    # reliable intersection.  Larger = more stable but updates less often.
+    MIN_ANGLE_DIFF = 5.0
+
     def _compute_eye_center(self, frame: np.ndarray, ellipse: Optional[tuple]) -> tuple[int, int]:
-        """Update ray lines and compute the running-average eye center."""
+        """Estimate the 2D eye center using EWMA over ray intersections.
+
+        Each valid ellipse defines a ray (along its minor-axis normal) that
+        should pass through the eye center.  When two rays from different
+        gaze angles intersect, the intersection is a noisy estimate of the
+        eye center.  We fuse these estimates with an exponential weighted
+        moving average so recent frames matter most.
+        """
         st = self.state
+        h, w = frame.shape[:2]
+        default = (w // 2, h // 2)
 
-        if ellipse is not None:
-            st.ray_lines.append(ellipse)
-            if len(st.ray_lines) > st.max_rays:
-                st.ray_lines = st.ray_lines[-st.max_rays :]
+        if ellipse is None:
+            # No detection — return current estimate or default
+            if st.eye_center:
+                return (int(st.eye_center[0]), int(st.eye_center[1]))
+            return default
 
-        model_center_average = (320, 240)
+        # Try to intersect with the previous valid ellipse
+        prev = st.prev_ellipse
+        st.prev_ellipse = ellipse
 
-        # We need to temporarily patch the module-level stored_intersections
-        # in eye_tracker_3d so compute_average_intersection works.
-        import src.eye_tracker_3d as et3d
+        if prev is None:
+            if st.eye_center:
+                return (int(st.eye_center[0]), int(st.eye_center[1]))
+            return default
 
-        old_stored = et3d.stored_intersections
-        et3d.stored_intersections = st.stored_intersections
+        # Check angle difference — need enough rotation for a good intersection
+        angle_diff = abs(ellipse[2] - prev[2])
+        if angle_diff < self.MIN_ANGLE_DIFF:
+            if st.eye_center:
+                return (int(st.eye_center[0]), int(st.eye_center[1]))
+            return default
 
-        try:
-            model_center = compute_average_intersection(frame, st.ray_lines, 5, 1500, 5)
-            # Sync back
-            st.stored_intersections = et3d.stored_intersections
-        finally:
-            et3d.stored_intersections = old_stored
+        # Compute intersection of the two minor-axis normal rays
+        intersection = self._intersect_ellipse_normals(prev, ellipse)
+        if intersection is None:
+            if st.eye_center:
+                return (int(st.eye_center[0]), int(st.eye_center[1]))
+            return default
 
-        if model_center is not None:
-            model_center_average = update_and_average_point(st.model_centers, model_center, 200)
+        ix, iy = intersection
 
-        if model_center_average == (320, 240):
-            model_center_average = st.prev_model_center_avg
-        if model_center_average[0] != 0:
-            st.prev_model_center_avg = model_center_average
+        # Reject if outside frame bounds
+        if not (0 <= ix < w and 0 <= iy < h):
+            if st.eye_center:
+                return (int(st.eye_center[0]), int(st.eye_center[1]))
+            return default
 
-        return model_center_average
+        # EWMA update
+        alpha = self.settings.eye_center_alpha
+        if st.eye_center is None:
+            st.eye_center = (float(ix), float(iy))
+        else:
+            st.eye_center = (
+                alpha * ix + (1 - alpha) * st.eye_center[0],
+                alpha * iy + (1 - alpha) * st.eye_center[1],
+            )
+
+        return (int(st.eye_center[0]), int(st.eye_center[1]))
+
+    @staticmethod
+    def _intersect_ellipse_normals(e1: tuple, e2: tuple) -> Optional[tuple[float, float]]:
+        """Compute the intersection of two ellipses' minor-axis normals."""
+        (cx1, cy1), (_, minor1), angle1 = e1
+        (cx2, cy2), (_, minor2), angle2 = e2
+
+        a1 = np.deg2rad(angle1)
+        a2 = np.deg2rad(angle2)
+
+        dx1 = (minor1 / 2) * np.cos(a1)
+        dy1 = (minor1 / 2) * np.sin(a1)
+        dx2 = (minor2 / 2) * np.cos(a2)
+        dy2 = (minor2 / 2) * np.sin(a2)
+
+        det = dx1 * (-dy2) - dy1 * (-dx2)
+        if abs(det) < 1e-10:
+            return None
+
+        t1 = ((cx2 - cx1) * (-dy2) - (cy2 - cy1) * (-dx2)) / det
+        return (cx1 + t1 * dx1, cy1 + t1 * dy1)
 
     def _build_tracking(
         self,
@@ -219,20 +283,7 @@ class FrameProcessor:
                 "direction": [round(float(v), 4) for v in direction_3d],
             }
 
-            # Overlay gaze text
-            origin_text = f"Origin: ({center_3d[0]:.2f}, {center_3d[1]:.2f}, {center_3d[2]:.2f})"
-            dir_text = f"Dir: ({direction_3d[0]:.2f}, {direction_3d[1]:.2f}, {direction_3d[2]:.2f})"
-            h = frame.shape[0]
-            cv2.putText(
-                frame, origin_text, (12, h - 38), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 3
-            )
-            cv2.putText(frame, dir_text, (12, h - 13), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 3)
-            cv2.putText(
-                frame, origin_text, (10, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2
-            )
-            cv2.putText(
-                frame, dir_text, (10, h - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2
-            )
+            # No overlay text — metrics are displayed in the web UI
 
         return tracking
 

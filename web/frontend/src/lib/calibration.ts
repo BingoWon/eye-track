@@ -208,14 +208,33 @@ export function applyCalibration(
 }
 
 /**
- * Smooth the mapped position using exponential moving average.
+ * Velocity-adaptive smoothing (1-Euro filter inspired).
+ *
+ * When gaze moves fast (saccade) → high alpha → fast response.
+ * When gaze is still (fixation) → low alpha → heavy smoothing, no jitter.
+ *
+ * @param minAlpha  Smoothing during fixation (lower = smoother, 0.04–0.1)
+ * @param maxAlpha  Smoothing during saccade (higher = faster, 0.5–0.8)
+ * @param speedThreshold  Speed (in 0-1 screen units/frame) at which alpha reaches max
  */
 export function smoothPosition(
 	current: [number, number],
 	previous: [number, number] | null,
-	alpha = 0.3,
+	_alpha = 0.3, // legacy parameter, ignored
+	minAlpha = 0.06,
+	maxAlpha = 0.6,
+	speedThreshold = 0.05,
 ): [number, number] {
 	if (!previous) return current;
+
+	const dx = current[0] - previous[0];
+	const dy = current[1] - previous[1];
+	const speed = Math.sqrt(dx * dx + dy * dy);
+
+	// Interpolate alpha based on speed
+	const t = Math.min(1, speed / speedThreshold);
+	const alpha = minAlpha + t * (maxAlpha - minAlpha);
+
 	return [
 		alpha * current[0] + (1 - alpha) * previous[0],
 		alpha * current[1] + (1 - alpha) * previous[1],

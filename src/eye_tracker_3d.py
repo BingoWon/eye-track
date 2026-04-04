@@ -12,7 +12,6 @@ via automatic capture backend selection.
 
 import os
 import platform
-import random
 
 import cv2
 import numpy as np
@@ -70,12 +69,8 @@ except ImportError:
 # Global state
 # ---------------------------------------------------------------------------
 selected_camera = None
-ray_lines = []
-model_centers = []
-max_rays = 100
-prev_model_center_avg = (320, 240)
-max_observed_distance = 0
-stored_intersections = []
+_prev_ellipse = None
+_eye_center = None
 
 
 # ---------------------------------------------------------------------------
@@ -93,124 +88,6 @@ def detect_cameras(max_cams=10):
             available_cameras.append(i)
             cap.release()
     return available_cameras
-
-
-# ---------------------------------------------------------------------------
-# Running average utilities
-# ---------------------------------------------------------------------------
-
-
-def update_and_average_point(point_list, new_point, N):
-    """
-    Add a new point to the list, keep only the last N points,
-    return the average.
-    """
-    point_list.append(new_point)
-    if len(point_list) > N:
-        point_list.pop(0)
-    if not point_list:
-        return None
-    avg_x = int(np.mean([p[0] for p in point_list]))
-    avg_y = int(np.mean([p[1] for p in point_list]))
-    return (avg_x, avg_y)
-
-
-# ---------------------------------------------------------------------------
-# Ray geometry utilities
-# ---------------------------------------------------------------------------
-
-
-def draw_orthogonal_ray(image, ellipse, length=100, color=(0, 255, 0), thickness=1):
-    """Draw a ray orthogonal to the ellipse's minor axis through its center."""
-    (cx, cy), (major_axis, minor_axis), angle = ellipse
-    angle_rad = np.deg2rad(angle)
-    normal_dx = (minor_axis / 2) * np.cos(angle_rad)
-    normal_dy = (minor_axis / 2) * np.sin(angle_rad)
-
-    pt1 = (
-        int(cx - length * normal_dx / (minor_axis / 2)),
-        int(cy - length * normal_dy / (minor_axis / 2)),
-    )
-    pt2 = (
-        int(cx + length * normal_dx / (minor_axis / 2)),
-        int(cy + length * normal_dy / (minor_axis / 2)),
-    )
-
-    cv2.line(image, pt1, pt2, color, thickness)
-    return image
-
-
-def find_line_intersection(ellipse1, ellipse2):
-    """Compute the intersection of two lines orthogonal to given ellipses."""
-    (cx1, cy1), (_, minor_axis1), angle1 = ellipse1
-    (cx2, cy2), (_, minor_axis2), angle2 = ellipse2
-
-    angle1_rad = np.deg2rad(angle1)
-    angle2_rad = np.deg2rad(angle2)
-
-    dx1 = (minor_axis1 / 2) * np.cos(angle1_rad)
-    dy1 = (minor_axis1 / 2) * np.sin(angle1_rad)
-    dx2 = (minor_axis2 / 2) * np.cos(angle2_rad)
-    dy2 = (minor_axis2 / 2) * np.sin(angle2_rad)
-
-    A = np.array([[dx1, -dx2], [dy1, -dy2]])
-    B = np.array([cx2 - cx1, cy2 - cy1])
-
-    if abs(np.linalg.det(A)) < 1e-10:
-        return None
-
-    t1, _ = np.linalg.solve(A, B)
-
-    intersection_x = cx1 + t1 * dx1
-    intersection_y = cy1 + t1 * dy1
-
-    return (int(intersection_x), int(intersection_y))
-
-
-def prune_intersections(intersections, maximum):
-    """Remove oldest intersections to maintain the last `maximum` entries."""
-    if len(intersections) <= maximum:
-        return intersections
-    return intersections[-maximum:]
-
-
-def compute_average_intersection(frame, ray_lines_list, N, M, spacing):
-    """
-    Select N random rays, find pairwise intersections, store them,
-    and return the running average intersection point (2D eye center estimate).
-    """
-    global stored_intersections
-
-    if len(ray_lines_list) < 2 or N < 2:
-        return (0, 0)
-
-    height, width = frame.shape[:2]
-    selected_lines = random.sample(ray_lines_list, min(N, len(ray_lines_list)))
-    intersections = []
-
-    for i in range(len(selected_lines) - 1):
-        line1 = selected_lines[i]
-        line2 = selected_lines[i + 1]
-
-        angle1 = line1[2]
-        angle2 = line2[2]
-
-        if abs(angle1 - angle2) >= 2:
-            intersection = find_line_intersection(line1, line2)
-            if intersection and 0 <= intersection[0] < width and 0 <= intersection[1] < height:
-                intersections.append(intersection)
-                stored_intersections.append(intersection)
-
-    if len(stored_intersections) > M:
-        stored_intersections = prune_intersections(stored_intersections, M)
-
-    if not intersections:
-        return None
-
-    avg_x = np.mean([pt[0] for pt in stored_intersections])
-    avg_y = np.mean([pt[1] for pt in stored_intersections])
-
-    return (int(avg_x), int(avg_y))
 
 
 # ---------------------------------------------------------------------------
@@ -266,27 +143,6 @@ def compute_gaze_vector(x, y, center_x, center_y, screen_width=640, screen_heigh
     c = np.dot(L, L) - inner_radius**2
 
     discriminant = b**2 - 4 * a * c
-    if discriminant < 0:
-        t = -np.dot(direction, L) / np.dot(direction, direction)
-        intersection_point = origin + t * direction
-        intersection_local = intersection_point - sphere_center
-        target_direction = intersection_local / np.linalg.norm(intersection_local)
-    else:
-        sqrt_disc = np.sqrt(discriminant)
-        t1 = (-b - sqrt_disc) / (2 * a)
-        t2 = (-b + sqrt_disc) / (2 * a)
-
-        t = None
-        if t1 > 0 and t2 > 0:
-            t = min(t1, t2)
-        elif t1 > 0:
-            t = t1
-        elif t2 > 0:
-            t = t2
-        if t is None:
-            return None, None
-
-    # Recompute final intersection
     sqrt_disc = np.sqrt(max(discriminant, 0))
     t1 = (-b - sqrt_disc) / (2 * a)
     t2 = (-b + sqrt_disc) / (2 * a)
@@ -348,6 +204,32 @@ def compute_gaze_vector(x, y, center_x, center_y, screen_width=640, screen_heigh
 
 
 # ---------------------------------------------------------------------------
+# Ray intersection helper
+# ---------------------------------------------------------------------------
+
+
+def _intersect_normals(e1, e2):
+    """Compute the intersection of two ellipses' minor-axis normal rays."""
+    (cx1, cy1), (_, minor1), angle1 = e1
+    (cx2, cy2), (_, minor2), angle2 = e2
+
+    a1 = np.deg2rad(angle1)
+    a2 = np.deg2rad(angle2)
+
+    dx1 = (minor1 / 2) * np.cos(a1)
+    dy1 = (minor1 / 2) * np.sin(a1)
+    dx2 = (minor2 / 2) * np.cos(a2)
+    dy2 = (minor2 / 2) * np.sin(a2)
+
+    det = dx1 * (-dy2) - dy1 * (-dx2)
+    if abs(det) < 1e-10:
+        return None
+
+    t1 = ((cx2 - cx1) * (-dy2) - (cy2 - cy1) * (-dx2)) / det
+    return (cx1 + t1 * dx1, cy1 + t1 * dy1)
+
+
+# ---------------------------------------------------------------------------
 # Core 3D frame processing
 # ---------------------------------------------------------------------------
 
@@ -366,7 +248,7 @@ def process_frames(
     Process three threshold levels for the best pupil ellipse,
     compute the 3D eye center and gaze direction.
     """
-    global ray_lines, max_rays, prev_model_center_avg, max_observed_distance
+    global _prev_ellipse, _eye_center
 
     kernel = np.ones((5, 5), np.uint8)
     final_rotated_rect = ((0, 0), (0, 0), 0)
@@ -413,20 +295,31 @@ def process_frames(
         ellipse = cv2.fitEllipse(final_contours[0])
         final_rotated_rect = ellipse
 
-        ray_lines.append(final_rotated_rect)
-        if len(ray_lines) > max_rays:
-            ray_lines = ray_lines[-max_rays:]
+    # Compute 2D eye center via EWMA over ray intersections
+    h, w = frame.shape[:2]
+    model_center_average = (w // 2, h // 2)
 
-    # Compute 2D eye center from ray intersections
-    model_center_average = (320, 240)
-    model_center = compute_average_intersection(frame, ray_lines, 5, 1500, 5)
-    if model_center is not None:
-        model_center_average = update_and_average_point(model_centers, model_center, 200)
+    if final_rotated_rect is not None and _prev_ellipse is not None:
+        angle_diff = abs(final_rotated_rect[2] - _prev_ellipse[2])
+        if angle_diff >= 5.0:
+            intersection = _intersect_normals(_prev_ellipse, final_rotated_rect)
+            if intersection is not None:
+                ix, iy = intersection
+                if 0 <= ix < w and 0 <= iy < h:
+                    alpha = 0.02
+                    if _eye_center is None:
+                        _eye_center = (float(ix), float(iy))
+                    else:
+                        _eye_center = (
+                            alpha * ix + (1 - alpha) * _eye_center[0],
+                            alpha * iy + (1 - alpha) * _eye_center[1],
+                        )
 
-    if model_center_average[0] == 320:
-        model_center_average = prev_model_center_avg
-    if model_center_average[0] != 0:
-        prev_model_center_avg = model_center_average
+    if final_rotated_rect is not None:
+        _prev_ellipse = final_rotated_rect
+
+    if _eye_center is not None:
+        model_center_average = (int(_eye_center[0]), int(_eye_center[1]))
 
     if center_x is None or center_y is None:
         return final_rotated_rect

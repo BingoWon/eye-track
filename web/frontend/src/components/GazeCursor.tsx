@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { type CalibrationResult, applyCalibration, smoothPosition } from "../lib/calibration";
 import type { TrackingData } from "../types/tracking";
@@ -9,132 +9,110 @@ interface GazeCursorProps {
 	visible: boolean;
 }
 
-const TRAIL_LENGTH = 7;
-const SMOOTH_ALPHA = 0.3;
-const TRAIL_FADE_MS = 2000;
+const TRAIL_MAX = 12;
+const TRAIL_LIFETIME_MS = 600;
 
-type TrailPoint = { pos: [number, number]; time: number };
+type TrailPoint = { x: number; y: number; time: number };
 
 export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) {
-	const previousPos = useRef<[number, number] | null>(null);
-	const [position, setPosition] = useState<[number, number] | null>(null);
+	const prevSmoothed = useRef<[number, number] | null>(null);
 	const trailRef = useRef<TrailPoint[]>([]);
+	const [cursor, setCursor] = useState<[number, number] | null>(null);
 	const [trail, setTrail] = useState<TrailPoint[]>([]);
 
+	// Prune expired trail dots on a timer
+	useEffect(() => {
+		if (!visible || !calibration) return;
+		const id = setInterval(() => {
+			const now = Date.now();
+			trailRef.current = trailRef.current.filter((p) => now - p.time < TRAIL_LIFETIME_MS);
+			setTrail([...trailRef.current]);
+		}, 50);
+		return () => clearInterval(id);
+	}, [visible, calibration]);
+
+	// Process tracking data with velocity-adaptive smoothing
 	useEffect(() => {
 		if (!visible || !calibration || !tracking?.pupil?.center) {
-			previousPos.current = null;
-			setPosition(null);
+			prevSmoothed.current = null;
 			trailRef.current = [];
+			setCursor(null);
 			setTrail([]);
 			return;
 		}
 
 		const raw = applyCalibration(tracking.pupil.center, calibration);
-		const smoothed = smoothPosition(raw, previousPos.current, SMOOTH_ALPHA);
-		previousPos.current = smoothed;
+		const smoothed = smoothPosition(raw, prevSmoothed.current);
+		prevSmoothed.current = smoothed;
 
-		// Convert to viewport pixels
-		const px: [number, number] = [
-			smoothed[0] * window.innerWidth,
-			smoothed[1] * window.innerHeight,
-		];
+		const px = Math.max(0, Math.min(window.innerWidth, smoothed[0] * window.innerWidth));
+		const py = Math.max(0, Math.min(window.innerHeight, smoothed[1] * window.innerHeight));
 
-		// Clamp to viewport
-		px[0] = Math.max(0, Math.min(window.innerWidth, px[0]));
-		px[1] = Math.max(0, Math.min(window.innerHeight, px[1]));
+		setCursor([px, py]);
 
-		setPosition(px);
-
-		// Update trail with timestamps
 		const now = Date.now();
-		trailRef.current = [...trailRef.current, { pos: px, time: now }].slice(-TRAIL_LENGTH);
+		trailRef.current.push({ x: px, y: py, time: now });
+		if (trailRef.current.length > TRAIL_MAX) {
+			trailRef.current = trailRef.current.slice(-TRAIL_MAX);
+		}
 		setTrail([...trailRef.current]);
 	}, [tracking, calibration, visible]);
 
-	const confidence = tracking?.confidence ?? 0;
-	const cursorOpacity = Math.max(0.2, Math.min(0.8, confidence));
+	if (!visible || !calibration || !cursor) return null;
 
-	if (!visible || !calibration) return null;
+	const [cx, cy] = cursor;
+	const now = Date.now();
 
 	return (
 		<div className="fixed inset-0 pointer-events-none z-40">
-			<AnimatePresence>
-				{position && (
-					<>
-						{/* Trail dots */}
-						{trail.slice(0, -1).map((point, i) => {
-							const now = Date.now();
-							const ageMs = now - point.time;
-							const timeFade = Math.max(0, 1 - ageMs / TRAIL_FADE_MS);
-							const indexFade = (trail.length - 1 - i) / trail.length;
-							const opacity = (1 - indexFade) * 0.25 * cursorOpacity * timeFade;
-							const size = 20 * (1 - indexFade * 0.5);
-							if (opacity <= 0) return null;
-							return (
-								<div
-									key={`trail-${point.pos[0].toFixed(1)}-${point.pos[1].toFixed(1)}`}
-									className="absolute rounded-full"
-									style={{
-										left: point.pos[0] - size / 2,
-										top: point.pos[1] - size / 2,
-										width: size,
-										height: size,
-										backgroundColor: "var(--color-accent)",
-										opacity,
-									}}
-								/>
-							);
-						})}
+			{/* Trail dots */}
+			{trail.slice(0, -1).map((point) => {
+				const age = now - point.time;
+				const fade = Math.max(0, 1 - age / TRAIL_LIFETIME_MS);
+				if (fade <= 0) return null;
+				const size = 6 + fade * 6;
+				return (
+					<div
+						key={point.time}
+						className="absolute rounded-full"
+						style={{
+							left: point.x - size / 2,
+							top: point.y - size / 2,
+							width: size,
+							height: size,
+							backgroundColor: "var(--color-accent)",
+							opacity: fade * 0.2,
+						}}
+					/>
+				);
+			})}
 
-						{/* Main cursor */}
-						<motion.div
-							className="absolute"
-							style={{
-								left: position[0] - 10,
-								top: position[1] - 10,
-							}}
-							initial={{ scale: 0, opacity: 0 }}
-							animate={{ scale: 1, opacity: cursorOpacity }}
-							exit={{ scale: 0, opacity: 0 }}
-							transition={{ type: "spring", stiffness: 400, damping: 30 }}
-						>
-							{/* Glow */}
-							<div
-								className="absolute inset-[-6px] rounded-full"
-								style={{
-									background: "radial-gradient(circle, var(--color-glow-cyan) 0%, transparent 70%)",
-								}}
-							/>
-							{/* Outer ring */}
-							<motion.div
-								className="w-5 h-5 rounded-full border-[2px]"
-								style={{
-									borderColor: "var(--color-accent)",
-									backgroundColor: "rgba(34, 211, 238, 0.15)",
-								}}
-								animate={{ scale: [1, 1.15, 1] }}
-								transition={{
-									duration: 2,
-									repeat: Number.POSITIVE_INFINITY,
-									ease: "easeInOut",
-								}}
-							/>
-							{/* Center dot */}
-							<div
-								className="absolute rounded-full"
-								style={{
-									width: 6,
-									height: 6,
-									left: 7,
-									top: 7,
-									backgroundColor: "var(--color-accent)",
-								}}
-							/>
-						</motion.div>
-					</>
-				)}
-			</AnimatePresence>
+			{/* Main cursor */}
+			<motion.div
+				className="absolute"
+				style={{ left: cx - 12, top: cy - 12 }}
+				initial={{ scale: 0, opacity: 0 }}
+				animate={{ scale: 1, opacity: 0.7 }}
+				transition={{ type: "spring", stiffness: 400, damping: 30 }}
+			>
+				<div
+					className="absolute inset-[-8px] rounded-full"
+					style={{
+						background: "radial-gradient(circle, var(--color-glow-cyan) 0%, transparent 70%)",
+					}}
+				/>
+				<div
+					className="w-6 h-6 rounded-full border-2"
+					style={{
+						borderColor: "var(--color-accent)",
+						backgroundColor: "rgba(34, 211, 238, 0.1)",
+					}}
+				/>
+				<div
+					className="absolute rounded-full"
+					style={{ width: 6, height: 6, left: 9, top: 9, backgroundColor: "var(--color-accent)" }}
+				/>
+			</motion.div>
 		</div>
 	);
 }

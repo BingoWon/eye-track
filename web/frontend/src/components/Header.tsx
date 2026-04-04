@@ -56,6 +56,75 @@ function statusColor(status: ConnectionStatus): string {
 	}
 }
 
+const COLOR_MAP = {
+	accent: { bg: "34,211,238", text: "var(--color-accent)" },
+	success: { bg: "52,211,153", text: "var(--color-success)" },
+	warning: { bg: "251,191,36", text: "var(--color-warning)" },
+};
+
+function HeaderButton({
+	icon: Icon,
+	label,
+	onClick,
+	active = false,
+	disabled = false,
+	activeColor = "accent",
+	inactiveColor = "accent",
+}: {
+	icon: React.ComponentType<{ className?: string }>;
+	label: string;
+	onClick?: () => void;
+	active?: boolean;
+	disabled?: boolean;
+	activeColor?: keyof typeof COLOR_MAP;
+	inactiveColor?: keyof typeof COLOR_MAP;
+}) {
+	const c = active ? COLOR_MAP[activeColor] : COLOR_MAP[inactiveColor];
+	return (
+		<button
+			type="button"
+			onClick={disabled ? undefined : onClick}
+			disabled={disabled}
+			className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 border ${
+				disabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-95"
+			}`}
+			style={
+				disabled
+					? {
+							backgroundColor: "rgba(139,148,158,0.06)",
+							borderColor: "rgba(139,148,158,0.1)",
+							color: "var(--color-text-muted)",
+						}
+					: {
+							backgroundColor: `rgba(${c.bg}, ${active ? 0.12 : 0.08})`,
+							borderColor: `rgba(${c.bg}, ${active ? 0.3 : 0.2})`,
+							color: c.text,
+						}
+			}
+		>
+			<Icon className="w-3.5 h-3.5" />
+			{label}
+		</button>
+	);
+}
+
+function FpsBadge({ label, value }: { label: string; value: number }) {
+	return (
+		<div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[var(--color-bg-primary)]/40 border border-[var(--color-border)]/40 text-[11px] font-mono">
+			<span
+				className="w-1.5 h-1.5 rounded-full transition-colors duration-500"
+				style={{ backgroundColor: fpsColor(value) }}
+			/>
+			<span className="text-[var(--color-text-muted)] text-[10px] uppercase tracking-wider">
+				{label}
+			</span>
+			<span className="text-[var(--color-text-secondary)] font-semibold tabular-nums min-w-[18px] text-right">
+				{Math.round(value)}
+			</span>
+		</div>
+	);
+}
+
 function statusLabel(status: ConnectionStatus): string {
 	switch (status) {
 		case "connected":
@@ -162,89 +231,47 @@ export function Header({
 				))}
 			</nav>
 
-			{/* Right: Pause + FPS + Connection */}
-			<div className="flex items-center gap-2.5 min-w-[320px] justify-end">
-				{/* Pause/Resume button */}
+			{/* Right: Actions + FPS + Connection */}
+			<div className="flex items-center gap-2 min-w-[320px] justify-end">
+				{/* Action buttons — unified style */}
 				{onTogglePause && (
-					<button
-						type="button"
+					<HeaderButton
+						icon={paused ? Play : Pause}
+						label={paused ? "Resume" : "Pause"}
 						onClick={onTogglePause}
-						className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-all duration-200 border ${
-							paused
-								? "bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/20 hover:bg-[var(--color-warning)]/15"
-								: "bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border-[var(--color-border)]/40 hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-active)]/40"
-						}`}
-					>
-						{paused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
-						{paused ? "Resume" : "Pause"}
-					</button>
+						active={paused}
+						activeColor="warning"
+						inactiveColor="accent"
+					/>
 				)}
-
-				{/* Server FPS */}
-				<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-bg-primary)]/40 border border-[var(--color-border)]/40 text-[11px] font-mono">
-					<span
-						className="w-1.5 h-1.5 rounded-full transition-colors duration-500"
-						style={{ backgroundColor: fpsColor(fps) }}
-					/>
-					<span className="text-[var(--color-text-muted)] text-[10px] uppercase tracking-wider">
-						Srv
-					</span>
-					<span className="text-[var(--color-text-secondary)] font-semibold tabular-nums min-w-[18px] text-right">
-						{Math.round(fps)}
-					</span>
-				</div>
-
-				{/* Client FPS */}
-				<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-bg-primary)]/40 border border-[var(--color-border)]/40 text-[11px] font-mono">
-					<span
-						className="w-1.5 h-1.5 rounded-full transition-colors duration-500"
-						style={{ backgroundColor: fpsColor(clientFps) }}
-					/>
-					<span className="text-[var(--color-text-muted)] text-[10px] uppercase tracking-wider">
-						Cli
-					</span>
-					<span className="text-[var(--color-text-secondary)] font-semibold tabular-nums min-w-[18px] text-right">
-						{Math.round(clientFps)}
-					</span>
-				</div>
-
-				{/* Calibrate button */}
 				{onCalibrateClick && (
-					<button
-						type="button"
+					<HeaderButton
+						icon={Crosshair}
+						label={calibration ? "Calibrated" : "Calibrate"}
 						onClick={onCalibrateClick}
-						className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all duration-200 cursor-pointer border ${
-							calibration
-								? "bg-[var(--color-success)]/8 text-[var(--color-success)] border-[var(--color-success)]/15 hover:bg-[var(--color-success)]/15"
-								: "bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border-[var(--color-border)]/40 hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-active)]/40"
-						}`}
-					>
-						<Crosshair className="w-3 h-3" />
-						{calibration ? "Calibrated" : "Calibrate"}
-					</button>
+						active={!!calibration}
+						activeColor="success"
+						inactiveColor="accent"
+					/>
 				)}
-
-				{/* Gaze cursor toggle — always visible, disabled when uncalibrated */}
 				{onToggleGazeCursor && (
-					<button
-						type="button"
+					<HeaderButton
+						icon={MousePointer}
+						label="Cursor"
 						onClick={calibration ? onToggleGazeCursor : undefined}
 						disabled={!calibration}
-						className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all duration-200 border ${
-							!calibration
-								? "opacity-40 cursor-not-allowed bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border-[var(--color-border)]/40"
-								: showGazeCursor
-									? "bg-[var(--color-accent)]/8 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent)]/15 cursor-pointer"
-									: "bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border-[var(--color-border)]/40 hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-active)]/40 cursor-pointer"
-						}`}
-					>
-						<MousePointer className="w-3 h-3" />
-						Cursor
-					</button>
+						active={!!calibration && !!showGazeCursor}
+						activeColor="accent"
+						inactiveColor="accent"
+					/>
 				)}
 
 				{/* Divider */}
 				<div className="w-px h-5 bg-gradient-to-b from-transparent via-[var(--color-border-active)] to-transparent" />
+
+				{/* FPS badges */}
+				<FpsBadge label="Srv" value={fps} />
+				<FpsBadge label="Cli" value={clientFps} />
 
 				{/* Connection status */}
 				<div className="flex items-center gap-2 text-[11px]">

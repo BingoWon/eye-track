@@ -13,15 +13,18 @@ interface VideoFeedProps {
 export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: VideoFeedProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	const isActive = tracking !== null && tracking.confidence > 0;
+	const isActive = tracking !== null && tracking.pupil !== null;
+	const isRejected = tracking !== null && tracking.pupil === null && tracking.confidence > 0;
 
 	return (
 		<motion.div
 			layout
-			className={`glass rounded-2xl flex flex-col overflow-hidden transition-all duration-500 ${
-				isActive
-					? "border border-[var(--color-accent)]/25 glow-cyan"
-					: "border border-[var(--color-border)]/80"
+			className={`glass rounded-2xl flex flex-col overflow-hidden transition-all duration-300 ${
+				isRejected
+					? "border border-[var(--color-danger)]/40"
+					: isActive
+						? "border border-[var(--color-accent)]/25"
+						: "border border-[var(--color-border)]/80"
 			}`}
 		>
 			{/* Header */}
@@ -33,11 +36,6 @@ export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: Video
 					<span className="text-[13px] font-semibold text-[var(--color-text-primary)] tracking-tight">
 						Live Feed
 					</span>
-					{tracking && (
-						<span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-[var(--color-accent)]/8 text-[var(--color-accent)] border border-[var(--color-accent)]/10">
-							{Math.round(tracking.fps)} FPS
-						</span>
-					)}
 				</div>
 				<button
 					type="button"
@@ -67,7 +65,8 @@ export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: Video
 							<img
 								src={`data:image/jpeg;base64,${image}`}
 								alt="Camera feed"
-								className="w-full h-full object-contain rounded-sm"
+								className="w-full h-full object-contain rounded-sm transition-all duration-150"
+								style={isRejected ? { filter: "saturate(0) brightness(0.6)" } : undefined}
 								draggable={false}
 							/>
 						</motion.div>
@@ -118,49 +117,6 @@ export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: Video
 						</motion.div>
 					)}
 				</AnimatePresence>
-			</div>
-
-			{/* Bottom info bar - frosted glass */}
-			<div className="glass-frosted flex items-center justify-between px-4 py-2 border-t border-[var(--color-border)]/40 text-[11px] font-mono shrink-0">
-				<div className="flex items-center gap-2">
-					<span className="text-[var(--color-text-muted)] text-[10px] uppercase tracking-wider">
-						Pupil
-					</span>
-					<span className="text-[var(--color-text-secondary)] tabular-nums">
-						{tracking?.pupil
-							? `(${tracking.pupil.center[0].toFixed(1)}, ${tracking.pupil.center[1].toFixed(1)})`
-							: "(---, ---)"}
-					</span>
-				</div>
-				<div className="w-px h-3 bg-[var(--color-border)]/40" />
-				<div className="flex items-center gap-2">
-					<span className="text-[var(--color-text-muted)] text-[10px] uppercase tracking-wider">
-						Angle
-					</span>
-					<span className="text-[var(--color-text-secondary)] tabular-nums">
-						{tracking?.pupil ? `${tracking.pupil.angle.toFixed(1)}\u00B0` : "---\u00B0"}
-					</span>
-				</div>
-				<div className="w-px h-3 bg-[var(--color-border)]/40" />
-				<div className="flex items-center gap-2">
-					<span className="text-[var(--color-text-muted)] text-[10px] uppercase tracking-wider">
-						Conf
-					</span>
-					<span
-						className="tabular-nums font-semibold"
-						style={{
-							color: tracking
-								? tracking.confidence > 0.7
-									? "var(--color-success)"
-									: tracking.confidence > 0.4
-										? "var(--color-warning)"
-										: "var(--color-danger)"
-								: "var(--color-text-muted)",
-						}}
-					>
-						{tracking ? `${(tracking.confidence * 100).toFixed(0)}%` : "--%"}
-					</span>
-				</div>
 			</div>
 		</motion.div>
 	);

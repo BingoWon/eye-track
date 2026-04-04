@@ -61,47 +61,17 @@ def apply_binary_threshold(image, darkest_pixel_value, added_threshold):
 
 def get_darkest_area(image):
     """
-    Find the darkest square patch in the image via sparse sampling.
-    Returns the center point of the darkest block.
-
-    Vectorised with NumPy — equivalent to the original 4-nested-loop
-    implementation but ~20x faster.
+    Find the center of the darkest 20×20 patch in the image.
+    Uses cv2.blur (box filter) for O(1)-per-pixel averaging.
+    Returns the center point (x, y) of the darkest region.
     """
-    ignore_bounds = 20
-    search_area = 20
-    internal_skip_size = 5
-    image_skip_size = 10
-
+    border = 20
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    h, w = gray.shape
-
-    # Sub-sample the search patch offsets (same as the inner two loops)
-    dy_offsets = np.arange(0, search_area, internal_skip_size)
-    dx_offsets = np.arange(0, search_area, internal_skip_size)
-
-    # Candidate top-left corners (same as the outer two loops)
-    ys = np.arange(ignore_bounds, h - ignore_bounds, image_skip_size)
-    xs = np.arange(ignore_bounds, w - ignore_bounds, image_skip_size)
-
-    # Build a summed image over the sparse patch offsets using vectorised indexing
-    patch_sum = np.zeros((h, w), dtype=np.int32)
-    count = 0
-    for dy in dy_offsets:
-        for dx in dx_offsets:
-            patch_sum[: h - dy, : w - dx] += gray[dy:, dx:].astype(np.int32)
-            count += 1
-
-    # Extract only the candidate positions
-    candidate_sums = patch_sum[np.ix_(ys, xs)]
-
-    # Find the minimum
-    min_idx = candidate_sums.argmin()
-    min_y_idx, min_x_idx = np.unravel_index(min_idx, candidate_sums.shape)
-
-    best_x = int(xs[min_x_idx]) + search_area // 2
-    best_y = int(ys[min_y_idx]) + search_area // 2
-
-    return (best_x, best_y)
+    blurred = cv2.blur(gray, (20, 20))
+    roi = blurred[border:-border, border:-border]
+    min_idx = roi.argmin()
+    min_y, min_x = np.unravel_index(min_idx, roi.shape)
+    return (int(min_x) + border, int(min_y) + border)
 
 
 # ---------------------------------------------------------------------------

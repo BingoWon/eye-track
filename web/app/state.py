@@ -25,6 +25,8 @@ class TrackingSettings:
     mask_size: int = 250
     stream_fps: int = 120
     jpeg_quality: int = 80
+    min_confidence: float = 0.3
+    eye_center_alpha: float = 0.02
 
 
 # ---------------------------------------------------------------------------
@@ -33,16 +35,12 @@ class TrackingSettings:
 
 
 class TrackingState:
-    """Encapsulates the mutable tracking state that eye_tracker_3d.py
-    normally keeps in module-level globals."""
+    """Mutable tracking state for the eye center EWMA estimator."""
 
     def __init__(self) -> None:
-        self.ray_lines: list = []
-        self.model_centers: list = []
-        self.max_rays: int = 100
-        self.prev_model_center_avg: tuple[int, int] = (320, 240)
+        self.prev_ellipse: tuple | None = None  # previous valid ellipse
+        self.eye_center: tuple[float, float] | None = None  # EWMA estimate
         self.max_observed_distance: int = 202
-        self.stored_intersections: list = []
 
     def reset(self) -> None:
         self.__init__()  # type: ignore[misc]

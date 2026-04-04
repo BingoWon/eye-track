@@ -574,7 +574,7 @@ export function CalibrationWizard({
 		// Real-time stability check — if recent samples deviate too much, fail immediately
 		if (count >= STABILITY_CHECK_WINDOW) {
 			const recentSamples = samplesRef.current.slice(-STABILITY_CHECK_WINDOW);
-			if (!checkStability(recentSamples, 12)) {
+			if (!checkStability(recentSamples, 10)) {
 				// Gaze deviated — immediate failure
 				setDotStatus("failed");
 				setWarningText("Gaze moved — hold Space to retry");
@@ -592,7 +592,7 @@ export function CalibrationWizard({
 
 		// Enough stable samples collected — success!
 		if (count >= REQUIRED_SAMPLES) {
-			if (checkStability(samplesRef.current)) {
+			if (checkStability(samplesRef.current, 10)) {
 				const [sx, sy] = CALIBRATION_POSITIONS[currentPoint];
 				calibrationDataRef.current.push({
 					screenX: sx,
@@ -786,39 +786,98 @@ export function CalibrationWizard({
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
 					>
-						{/* Completed points as small green dots */}
-						{completedPoints.map((idx) => {
-							const [x, y] = CALIBRATION_POSITIONS[idx];
+						{/* Arrows between consecutive points */}
+						<svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+							<defs>
+								<marker
+									id="arrowhead"
+									markerWidth="6"
+									markerHeight="4"
+									refX="5"
+									refY="2"
+									orient="auto"
+								>
+									<polygon points="0 0, 6 2, 0 4" fill="rgba(34,211,238,0.45)" />
+								</marker>
+							</defs>
+							{CALIBRATION_POSITIONS.map(([x, y], i) => {
+								if (i === 0) return null;
+								const [px, py] = CALIBRATION_POSITIONS[i - 1];
+								return (
+									<line
+										key={`arrow-${x}-${y}`}
+										x1={`${px * 100}%`}
+										y1={`${py * 100}%`}
+										x2={`${x * 100}%`}
+										y2={`${y * 100}%`}
+										stroke="rgba(34,211,238,0.3)"
+										strokeWidth="1.5"
+										strokeDasharray="6 4"
+										markerEnd="url(#arrowhead)"
+									/>
+								);
+							})}
+						</svg>
+
+						{/* All 9 points — always visible */}
+						{CALIBRATION_POSITIONS.map(([x, y], idx) => {
+							const isCompleted = completedPoints.includes(idx);
+							const isCurrent = idx === currentPoint;
+							const isFuture = !isCompleted && !isCurrent;
+
+							if (isCurrent) return null; // rendered separately with CalibrationDot
+
 							return (
-								<motion.div
-									key={`done-${idx}`}
-									className="absolute rounded-full"
+								<div
+									key={`point-${x}-${y}`}
+									className="absolute"
 									style={{
 										left: `${x * 100}%`,
 										top: `${y * 100}%`,
-										width: 8,
-										height: 8,
-										backgroundColor: "var(--color-success)",
-										opacity: 0.35,
 										transform: "translate(-50%, -50%)",
 									}}
-									initial={{ scale: 0 }}
-									animate={{ scale: 1 }}
-								/>
+								>
+									{isCompleted ? (
+										<motion.div
+											className="flex items-center justify-center rounded-full"
+											style={{
+												width: 16,
+												height: 16,
+												backgroundColor: "var(--color-success)",
+												opacity: 0.5,
+											}}
+											initial={{ scale: 0 }}
+											animate={{ scale: 1 }}
+										>
+											<Check
+												className="w-2.5 h-2.5 text-[var(--color-bg-primary)]"
+												strokeWidth={3}
+											/>
+										</motion.div>
+									) : isFuture ? (
+										<div
+											className="rounded-full border-[1.5px]"
+											style={{
+												width: 12,
+												height: 12,
+												borderColor: "rgba(34,211,238,0.45)",
+												backgroundColor: "rgba(34,211,238,0.1)",
+											}}
+										/>
+									) : null}
+								</div>
 							);
 						})}
 
-						{/* Current calibration dot */}
-						<AnimatePresence mode="wait">
-							<CalibrationDot
-								key={`point-${currentPoint}`}
-								position={CALIBRATION_POSITIONS[currentPoint]}
-								progress={progress}
-								status={dotStatus}
-								warningText={warningText}
-								spaceHeld={spaceHeld}
-							/>
-						</AnimatePresence>
+						{/* Current calibration dot (rendered on top) */}
+						<CalibrationDot
+							key={`point-${currentPoint}`}
+							position={CALIBRATION_POSITIONS[currentPoint]}
+							progress={progress}
+							status={dotStatus}
+							warningText={warningText}
+							spaceHeld={spaceHeld}
+						/>
 
 						{/* Progress counter */}
 						<motion.div

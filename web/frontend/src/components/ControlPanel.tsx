@@ -338,14 +338,27 @@ export function ControlPanel({
 					</div>
 				</Section>
 
-				{/* Stream Settings */}
-				<Section icon={Wifi} title="Stream">
+				{/* Stream & Filter Settings */}
+				<Section icon={Wifi} title="Stream & Filter">
 					<div className="space-y-3">
+						<SliderRow
+							label="Min Confidence"
+							value={Math.round(settings.minConfidence * 100)}
+							min={0}
+							max={100}
+							step={5}
+							unit="%"
+							onChange={(v) =>
+								onSettingsChange({
+									minConfidence: v / 100,
+								})
+							}
+						/>
 						<SliderRow
 							label="Stream FPS"
 							value={settings.streamFps}
 							min={5}
-							max={60}
+							max={120}
 							step={5}
 							unit=" fps"
 							onChange={(v) =>

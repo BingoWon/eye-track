@@ -94,6 +94,18 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 		return () => clearTimeout(retryTimerRef.current);
 	}, [detectCameras]);
 
+	// Cleanup blob URLs on unmount to prevent memory leaks
+	useEffect(() => {
+		return () => {
+			setCameras((prev) => {
+				for (const c of prev) {
+					if (c.previewUrl) URL.revokeObjectURL(c.previewUrl);
+				}
+				return prev;
+			});
+		};
+	}, []);
+
 	const handleConfirm = async () => {
 		if (selectedIndex === null) return;
 		setConnecting(true);

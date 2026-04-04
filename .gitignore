@@ -12,6 +12,9 @@ output_video.mp4
 web/frontend/node_modules/
 web/frontend/dist/
 
+# Claude
+.claude/
+
 # IDE
 .idea/
 .vscode/

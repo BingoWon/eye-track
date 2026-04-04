@@ -43,6 +43,7 @@ export interface Settings {
 	maskSize: number;
 	streamFps: number;
 	jpegQuality: number;
+	minConfidence: number;
 }
 
 export interface TrackingHistory {
@@ -59,4 +60,5 @@ export const DEFAULT_SETTINGS: Settings = {
 	maskSize: 250,
 	streamFps: 120,
 	jpegQuality: 80,
+	minConfidence: 0.3,
 };
