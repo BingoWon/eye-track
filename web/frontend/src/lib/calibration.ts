@@ -23,7 +23,7 @@ export interface CalibrationResult {
  * and we have at least 15 samples.
  */
 export function checkStability(samples: [number, number][], threshold = 8): boolean {
-	if (samples.length < 15) return false;
+	if (samples.length < 5) return false;
 
 	const xs = samples.map((s) => s[0]);
 	const ys = samples.map((s) => s[1]);

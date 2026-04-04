@@ -17,21 +17,33 @@ interface CalibrationWizardProps {
 }
 
 type Stage = "intro" | "calibrating" | "complete";
+type DotStatus = "waiting" | "collecting" | "success" | "failed";
 
+/*
+ * 9-point calibration grid — row-major left-to-right, top-to-bottom.
+ * This ordering minimizes saccade distance between consecutive points
+ * and ensures even coverage. Padding = 15% to avoid extreme gaze angles.
+ *
+ *   1 --- 2 --- 3
+ *   |     |     |
+ *   4 --- 5 --- 6
+ *   |     |     |
+ *   7 --- 8 --- 9
+ */
 const CALIBRATION_POSITIONS: [number, number][] = [
-	[0.5, 0.5], // Center
-	[0.12, 0.12], // Top-left
-	[0.88, 0.12], // Top-right
-	[0.88, 0.88], // Bottom-right
-	[0.12, 0.88], // Bottom-left
-	[0.5, 0.12], // Top-center
-	[0.88, 0.5], // Right-center
-	[0.5, 0.88], // Bottom-center
-	[0.12, 0.5], // Left-center
+	[0.15, 0.15], // 1  top-left
+	[0.5, 0.15], //  2  top-center
+	[0.85, 0.15], // 3  top-right
+	[0.15, 0.5], //  4  left-center
+	[0.5, 0.5], //   5  center
+	[0.85, 0.5], //  6  right-center
+	[0.15, 0.85], // 7  bottom-left
+	[0.5, 0.85], //  8  bottom-center
+	[0.85, 0.85], // 9  bottom-right
 ];
 
-const SAMPLE_DURATION_MS = 2500;
 const REQUIRED_SAMPLES = 40;
+const STABILITY_CHECK_WINDOW = 10; // check last N samples for deviation
 
 function accuracyLabel(accuracy: number): { label: string; color: string } {
 	if (accuracy < 0.02) return { label: "Excellent", color: "var(--color-success)" };
@@ -39,7 +51,10 @@ function accuracyLabel(accuracy: number): { label: string; color: string } {
 	return { label: "Fair", color: "var(--color-warning)" };
 }
 
-/** Floating particle for background ambiance */
+/* ------------------------------------------------------------------ */
+/*  Background particles                                              */
+/* ------------------------------------------------------------------ */
+
 function Particles() {
 	const particles = useRef(
 		Array.from({ length: 40 }, (_, i) => ({
@@ -70,7 +85,6 @@ function Particles() {
 					animate={{
 						y: [0, -30, 10, -20, 0],
 						x: [0, 15, -10, 5, 0],
-						opacity: [p.opacity, p.opacity * 2, p.opacity * 0.5, p.opacity * 1.5, p.opacity],
 					}}
 					transition={{
 						duration: p.duration,
@@ -84,7 +98,10 @@ function Particles() {
 	);
 }
 
-/** SVG eye icon for the intro */
+/* ------------------------------------------------------------------ */
+/*  SVG eye icon                                                      */
+/* ------------------------------------------------------------------ */
+
 function EyeIcon() {
 	return (
 		<motion.div
@@ -92,14 +109,7 @@ function EyeIcon() {
 			animate={{ scale: 1, opacity: 1 }}
 			transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
 		>
-			<svg
-				width="120"
-				height="120"
-				viewBox="0 0 120 120"
-				fill="none"
-				role="img"
-				aria-label="Eye icon"
-			>
+			<svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden="true">
 				<motion.ellipse
 					cx="60"
 					cy="60"
@@ -148,7 +158,10 @@ function EyeIcon() {
 	);
 }
 
-/** Celebration particles on completion */
+/* ------------------------------------------------------------------ */
+/*  Celebration + Checkmark                                           */
+/* ------------------------------------------------------------------ */
+
 function CelebrationBurst() {
 	const burstParticles = useRef(
 		Array.from({ length: 24 }, (_, i) => {
@@ -170,11 +183,7 @@ function CelebrationBurst() {
 				<motion.div
 					key={p.id}
 					className="absolute rounded-full"
-					style={{
-						width: p.size,
-						height: p.size,
-						backgroundColor: p.color,
-					}}
+					style={{ width: p.size, height: p.size, backgroundColor: p.color }}
 					initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
 					animate={{ x: p.x, y: p.y, opacity: 0, scale: 0 }}
 					transition={{ duration: 1.2, ease: "easeOut" }}
@@ -184,7 +193,6 @@ function CelebrationBurst() {
 	);
 }
 
-/** Animated checkmark SVG */
 function AnimatedCheckmark() {
 	return (
 		<motion.div
@@ -192,7 +200,7 @@ function AnimatedCheckmark() {
 			animate={{ scale: 1 }}
 			transition={{ type: "spring", stiffness: 300, damping: 20 }}
 		>
-			<svg width="80" height="80" viewBox="0 0 80 80" fill="none" role="img" aria-label="Checkmark">
+			<svg width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
 				<motion.circle
 					cx="40"
 					cy="40"
@@ -220,19 +228,27 @@ function AnimatedCheckmark() {
 	);
 }
 
-/** Single calibration dot with progress ring */
+/* ------------------------------------------------------------------ */
+/*  Calibration Dot — ring and dot are properly centered              */
+/* ------------------------------------------------------------------ */
+
 function CalibrationDot({
 	position,
 	progress,
 	status,
 	warningText,
+	spaceHeld,
 }: {
 	position: [number, number];
 	progress: number;
-	status: "collecting" | "success" | "failed";
+	status: DotStatus;
 	warningText: string | null;
+	spaceHeld: boolean;
 }) {
-	const circumference = 2 * Math.PI * 30;
+	const ringRadius = 28;
+	const svgSize = (ringRadius + 4) * 2;
+	const svgCenter = svgSize / 2;
+	const circumference = 2 * Math.PI * ringRadius;
 	const dashOffset = circumference * (1 - progress);
 
 	const ringColor =
@@ -244,17 +260,16 @@ function CalibrationDot({
 
 	return (
 		<motion.div
-			className="absolute flex flex-col items-center"
+			className="absolute"
 			style={{
 				left: `${position[0] * 100}%`,
 				top: `${position[1] * 100}%`,
-				transform: "translate(-50%, -50%)",
 			}}
 			initial={{ scale: 0, opacity: 0 }}
 			animate={{
-				scale: status === "success" ? [1, 1.2, 0.8] : 1,
+				scale: 1,
 				opacity: 1,
-				x: status === "failed" ? [0, -6, 6, -4, 4, 0] : 0,
+				x: status === "failed" ? [0, -8, 8, -5, 5, 0] : 0,
 			}}
 			exit={{ scale: 0, opacity: 0 }}
 			transition={
@@ -263,120 +278,165 @@ function CalibrationDot({
 					: { type: "spring", stiffness: 300, damping: 20 }
 			}
 		>
-			{/* Outer pulsing ring */}
-			{status === "collecting" && (
-				<motion.div
-					className="absolute rounded-full border-2"
-					style={{
-						width: 48,
-						height: 48,
-						borderColor: "var(--color-accent)",
-						opacity: 0.3,
-					}}
-					animate={{ scale: [1, 1.3, 1] }}
-					transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-				/>
-			)}
-
-			{/* Progress ring SVG */}
-			<svg
-				width="68"
-				height="68"
-				viewBox="0 0 68 68"
-				className="absolute"
-				style={{ transform: "rotate(-90deg)" }}
-				role="img"
-				aria-label="Progress ring"
+			{/* Container: centered on the position point */}
+			<div
+				className="relative flex items-center justify-center"
+				style={{
+					width: svgSize,
+					height: svgSize,
+					transform: "translate(-50%, -50%)",
+				}}
 			>
-				{/* Background ring */}
-				<circle
-					cx="34"
-					cy="34"
-					r="30"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="2"
-					className="text-[var(--color-border)]"
-					opacity="0.3"
-				/>
-				{/* Progress arc */}
-				<motion.circle
-					cx="34"
-					cy="34"
-					r="30"
-					fill="none"
-					stroke={ringColor}
-					strokeWidth="2.5"
-					strokeLinecap="round"
-					strokeDasharray={circumference}
-					strokeDashoffset={dashOffset}
-					style={{ filter: `drop-shadow(0 0 6px ${ringColor})` }}
-				/>
-			</svg>
-
-			{/* Center dot */}
-			{status === "success" ? (
-				<motion.div
-					className="relative z-10 flex items-center justify-center rounded-full"
-					style={{
-						width: 24,
-						height: 24,
-						backgroundColor: "var(--color-success)",
-					}}
-					initial={{ scale: 0 }}
-					animate={{ scale: [0, 1.3, 1] }}
-					transition={{ duration: 0.3 }}
-				>
-					<Check className="w-3.5 h-3.5 text-[var(--color-bg-primary)]" strokeWidth={3} />
-				</motion.div>
-			) : (
-				<div className="relative z-10">
-					{/* Middle circle */}
+				{/* Outer pulsing ring (only when waiting for spacebar) */}
+				{status === "waiting" && (
 					<motion.div
-						className="rounded-full flex items-center justify-center"
+						className="absolute rounded-full border-2"
+						style={{
+							width: svgSize + 16,
+							height: svgSize + 16,
+							borderColor: "var(--color-accent)",
+							opacity: 0.2,
+						}}
+						animate={{ scale: [1, 1.2, 1] }}
+						transition={{
+							duration: 2,
+							repeat: Number.POSITIVE_INFINITY,
+							ease: "easeInOut",
+						}}
+					/>
+				)}
+
+				{/* Progress ring SVG — centered */}
+				<svg
+					width={svgSize}
+					height={svgSize}
+					className="absolute inset-0"
+					style={{ transform: "rotate(-90deg)" }}
+					aria-hidden="true"
+				>
+					{/* Background ring */}
+					<circle
+						cx={svgCenter}
+						cy={svgCenter}
+						r={ringRadius}
+						fill="none"
+						stroke="var(--color-border)"
+						strokeWidth="2"
+						opacity="0.3"
+					/>
+					{/* Progress arc */}
+					<circle
+						cx={svgCenter}
+						cy={svgCenter}
+						r={ringRadius}
+						fill="none"
+						stroke={ringColor}
+						strokeWidth="2.5"
+						strokeLinecap="round"
+						strokeDasharray={circumference}
+						strokeDashoffset={dashOffset}
+						style={{
+							transition: "stroke-dashoffset 0.1s linear",
+							filter: `drop-shadow(0 0 6px ${ringColor})`,
+						}}
+					/>
+				</svg>
+
+				{/* Center dot — absolutely centered */}
+				{status === "success" ? (
+					<motion.div
+						className="relative z-10 flex items-center justify-center rounded-full"
 						style={{
 							width: 24,
 							height: 24,
-							backgroundColor: "var(--color-accent)",
-							boxShadow: "0 0 20px var(--color-glow-cyan), 0 0 40px var(--color-glow-cyan)",
+							backgroundColor: "var(--color-success)",
 						}}
-						animate={status === "collecting" ? { scale: [1, 1.05, 1] } : undefined}
+						initial={{ scale: 0 }}
+						animate={{ scale: [0, 1.3, 1] }}
+						transition={{ duration: 0.3 }}
+					>
+						<Check className="w-3.5 h-3.5 text-[var(--color-bg-primary)]" strokeWidth={3} />
+					</motion.div>
+				) : (
+					<motion.div
+						className="relative z-10 rounded-full flex items-center justify-center"
+						style={{
+							width: 24,
+							height: 24,
+							backgroundColor: spaceHeld ? "var(--color-accent)" : "var(--color-accent)",
+							opacity: status === "waiting" ? 0.7 : 1,
+							boxShadow: spaceHeld
+								? "0 0 20px var(--color-glow-cyan), 0 0 40px var(--color-glow-cyan)"
+								: "0 0 12px var(--color-glow-cyan)",
+						}}
+						animate={status === "collecting" ? { scale: [1, 1.08, 1] } : undefined}
 						transition={
 							status === "collecting"
-								? { duration: 1.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }
+								? {
+										duration: 0.8,
+										repeat: Number.POSITIVE_INFINITY,
+										ease: "easeInOut",
+									}
 								: undefined
 						}
 					>
-						{/* Inner white dot */}
 						<div
 							className="rounded-full"
-							style={{
-								width: 8,
-								height: 8,
-								backgroundColor: "#fff",
-							}}
+							style={{ width: 8, height: 8, backgroundColor: "#fff" }}
 						/>
 					</motion.div>
-				</div>
-			)}
-
-			{/* Warning text */}
-			<AnimatePresence>
-				{warningText && (
-					<motion.p
-						className="absolute top-full mt-4 text-[13px] font-medium whitespace-nowrap"
-						style={{ color: "var(--color-warning)" }}
-						initial={{ opacity: 0, y: -5 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: -5 }}
-					>
-						{warningText}
-					</motion.p>
 				)}
-			</AnimatePresence>
+			</div>
+
+			{/* Status text below */}
+			<div
+				className="absolute w-48 text-center"
+				style={{
+					top: svgSize / 2 + 40,
+					left: "50%",
+					transform: "translateX(-50%)",
+				}}
+			>
+				<AnimatePresence mode="wait">
+					{warningText && (
+						<motion.p
+							key="warning"
+							className="text-[13px] font-medium whitespace-nowrap"
+							style={{ color: "var(--color-danger)" }}
+							initial={{ opacity: 0, y: -5 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -5 }}
+						>
+							{warningText}
+						</motion.p>
+					)}
+					{status === "waiting" && !warningText && (
+						<motion.p
+							key="hint"
+							className="text-[12px] font-medium whitespace-nowrap"
+							style={{ color: "var(--color-text-muted)" }}
+							initial={{ opacity: 0, y: -5 }}
+							animate={{ opacity: [0.4, 0.8, 0.4] }}
+							exit={{ opacity: 0 }}
+							transition={{
+								opacity: {
+									duration: 2,
+									repeat: Number.POSITIVE_INFINITY,
+								},
+							}}
+						>
+							Hold Space when ready
+						</motion.p>
+					)}
+				</AnimatePresence>
+			</div>
 		</motion.div>
 	);
 }
+
+/* ------------------------------------------------------------------ */
+/*  Main CalibrationWizard component                                  */
+/* ------------------------------------------------------------------ */
 
 export function CalibrationWizard({
 	isOpen,
@@ -387,15 +447,14 @@ export function CalibrationWizard({
 	const [stage, setStage] = useState<Stage>("intro");
 	const [currentPoint, setCurrentPoint] = useState(0);
 	const [progress, setProgress] = useState(0);
-	const [dotStatus, setDotStatus] = useState<"collecting" | "success" | "failed">("collecting");
+	const [dotStatus, setDotStatus] = useState<DotStatus>("waiting");
 	const [warningText, setWarningText] = useState<string | null>(null);
 	const [completedPoints, setCompletedPoints] = useState<number[]>([]);
 	const [calibrationResult, setCalibrationResult] = useState<CalibrationResult | null>(null);
+	const [spaceHeld, setSpaceHeld] = useState(false);
 
 	const samplesRef = useRef<[number, number][]>([]);
 	const calibrationDataRef = useRef<CalibrationPoint[]>([]);
-	const collectingRef = useRef(false);
-	const startTimeRef = useRef(0);
 	const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Reset state when wizard opens
@@ -404,19 +463,71 @@ export function CalibrationWizard({
 			setStage("intro");
 			setCurrentPoint(0);
 			setProgress(0);
-			setDotStatus("collecting");
+			setDotStatus("waiting");
 			setWarningText(null);
 			setCompletedPoints([]);
 			setCalibrationResult(null);
+			setSpaceHeld(false);
 			samplesRef.current = [];
 			calibrationDataRef.current = [];
-			collectingRef.current = false;
 		}
 	}, [isOpen]);
 
-	// Keyboard handlers
+	// Space key hold handling
 	useEffect(() => {
-		if (!isOpen) return;
+		if (!isOpen || stage !== "calibrating") return;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === " " && !e.repeat) {
+				e.preventDefault();
+				setSpaceHeld(true);
+				// Start collecting if we were waiting
+				setDotStatus((prev) => {
+					if (prev === "waiting") {
+						samplesRef.current = [];
+						setProgress(0);
+						setWarningText(null);
+						return "collecting";
+					}
+					return prev;
+				});
+			}
+			if (e.key === "Escape") {
+				onClose();
+			}
+		};
+
+		const handleKeyUp = (e: KeyboardEvent) => {
+			if (e.key === " ") {
+				e.preventDefault();
+				setSpaceHeld(false);
+				// If still collecting, abort and reset to waiting
+				setDotStatus((prev) => {
+					if (prev === "collecting") {
+						samplesRef.current = [];
+						setProgress(0);
+						setWarningText("Released — hold Space to retry");
+						// Clear warning after a moment
+						if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+						retryTimerRef.current = setTimeout(() => setWarningText(null), 1500);
+						return "waiting";
+					}
+					return prev;
+				});
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+		};
+	}, [isOpen, stage, onClose]);
+
+	// Intro/complete keyboard shortcuts
+	useEffect(() => {
+		if (!isOpen || stage === "calibrating") return;
 
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
@@ -438,19 +549,17 @@ export function CalibrationWizard({
 		setStage("calibrating");
 		setCurrentPoint(0);
 		setProgress(0);
-		setDotStatus("collecting");
+		setDotStatus("waiting");
 		setWarningText(null);
+		setSpaceHeld(false);
 		samplesRef.current = [];
 		calibrationDataRef.current = [];
-		collectingRef.current = true;
-		startTimeRef.current = Date.now();
 	}, []);
 
-	// Collect samples from tracking data
+	// Collect samples while Space is held
 	useEffect(() => {
-		if (stage !== "calibrating" || !collectingRef.current) return;
+		if (stage !== "calibrating" || dotStatus !== "collecting") return;
 		if (!currentTracking?.pupil?.center) return;
-		if (dotStatus !== "collecting") return;
 
 		const sample: [number, number] = [
 			currentTracking.pupil.center[0],
@@ -458,16 +567,31 @@ export function CalibrationWizard({
 		];
 		samplesRef.current.push(sample);
 
-		// Update progress based on time elapsed
-		const elapsed = Date.now() - startTimeRef.current;
-		const timeProg = Math.min(elapsed / SAMPLE_DURATION_MS, 1);
-		const sampleProg = Math.min(samplesRef.current.length / REQUIRED_SAMPLES, 1);
-		setProgress(Math.min(timeProg, sampleProg));
+		const count = samplesRef.current.length;
+		setProgress(Math.min(count / REQUIRED_SAMPLES, 1));
 
-		// Check if we have enough samples and time has elapsed
-		if (samplesRef.current.length >= REQUIRED_SAMPLES && elapsed >= SAMPLE_DURATION_MS) {
+		// Real-time stability check — if recent samples deviate too much, fail immediately
+		if (count >= STABILITY_CHECK_WINDOW) {
+			const recentSamples = samplesRef.current.slice(-STABILITY_CHECK_WINDOW);
+			if (!checkStability(recentSamples, 12)) {
+				// Gaze deviated — immediate failure
+				setDotStatus("failed");
+				setWarningText("Gaze moved — hold Space to retry");
+				setSpaceHeld(false);
+				samplesRef.current = [];
+				setProgress(0);
+				if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+				retryTimerRef.current = setTimeout(() => {
+					setWarningText(null);
+					setDotStatus("waiting");
+				}, 1500);
+				return;
+			}
+		}
+
+		// Enough stable samples collected — success!
+		if (count >= REQUIRED_SAMPLES) {
 			if (checkStability(samplesRef.current)) {
-				// Success
 				const [sx, sy] = CALIBRATION_POSITIONS[currentPoint];
 				calibrationDataRef.current.push({
 					screenX: sx,
@@ -479,40 +603,39 @@ export function CalibrationWizard({
 				setProgress(1);
 				setCompletedPoints((prev) => [...prev, currentPoint]);
 
-				// Move to next point or complete
+				// Advance to next point
 				setTimeout(() => {
 					const nextPoint = currentPoint + 1;
 					if (nextPoint >= CALIBRATION_POSITIONS.length) {
-						// All points collected — compute calibration
 						const result = computeCalibration(calibrationDataRef.current);
 						setCalibrationResult(result);
 						setStage("complete");
 					} else {
 						setCurrentPoint(nextPoint);
 						setProgress(0);
-						setDotStatus("collecting");
+						setDotStatus("waiting");
 						setWarningText(null);
+						setSpaceHeld(false);
 						samplesRef.current = [];
-						startTimeRef.current = Date.now();
 					}
-				}, 600);
+				}, 500);
 			} else {
-				// Failed — instability
+				// Accumulated samples are unstable
 				setDotStatus("failed");
-				setWarningText("Keep your gaze steady");
-
+				setWarningText("Unstable — hold Space to retry");
+				setSpaceHeld(false);
+				samplesRef.current = [];
+				setProgress(0);
+				if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
 				retryTimerRef.current = setTimeout(() => {
-					samplesRef.current = [];
-					startTimeRef.current = Date.now();
-					setDotStatus("collecting");
-					setProgress(0);
 					setWarningText(null);
-				}, 1200);
+					setDotStatus("waiting");
+				}, 1500);
 			}
 		}
 	}, [currentTracking, stage, currentPoint, dotStatus]);
 
-	// Cleanup retry timer
+	// Cleanup
 	useEffect(() => {
 		return () => {
 			if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -520,22 +643,20 @@ export function CalibrationWizard({
 	}, []);
 
 	const handleFinish = useCallback(() => {
-		if (calibrationResult) {
-			onComplete(calibrationResult);
-		}
+		if (calibrationResult) onComplete(calibrationResult);
 	}, [calibrationResult, onComplete]);
 
 	const handleRecalibrate = useCallback(() => {
 		setStage("intro");
 		setCurrentPoint(0);
 		setProgress(0);
-		setDotStatus("collecting");
+		setDotStatus("waiting");
 		setWarningText(null);
 		setCompletedPoints([]);
 		setCalibrationResult(null);
+		setSpaceHeld(false);
 		samplesRef.current = [];
 		calibrationDataRef.current = [];
-		collectingRef.current = false;
 	}, []);
 
 	if (!isOpen) return null;
@@ -555,7 +676,7 @@ export function CalibrationWizard({
 			<Particles />
 
 			<AnimatePresence mode="wait">
-				{/* Stage 1: Intro */}
+				{/* -------- Stage 1: Intro -------- */}
 				{stage === "intro" && (
 					<motion.div
 						key="intro"
@@ -584,7 +705,11 @@ export function CalibrationWizard({
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ delay: 0.5 }}
 						>
-							Follow each dot with your eyes. Keep your head still.
+							Look at each dot and hold{" "}
+							<kbd className="px-1.5 py-0.5 mx-1 rounded bg-white/10 text-[var(--color-accent)] font-mono text-[13px]">
+								Space
+							</kbd>{" "}
+							to calibrate.
 						</motion.p>
 
 						<motion.div
@@ -601,8 +726,8 @@ export function CalibrationWizard({
 									<Crosshair className="w-4 h-4" style={{ color: "var(--color-accent)" }} />
 								</div>
 								<p className="text-[13px]" style={{ color: "var(--color-text-secondary)" }}>
-									9 calibration points will appear across your screen. Look directly at each dot
-									until it turns green.
+									9 points in a 3×3 grid. Look at each dot, then hold Space while keeping your gaze
+									steady.
 								</p>
 							</div>
 							<div className="flex items-start gap-3">
@@ -613,7 +738,7 @@ export function CalibrationWizard({
 									<MoveHorizontal className="w-4 h-4" style={{ color: "var(--color-accent)" }} />
 								</div>
 								<p className="text-[13px]" style={{ color: "var(--color-text-secondary)" }}>
-									Keep your head still and move only your eyes. The process takes about 30 seconds.
+									If your gaze drifts or you release Space, the point resets. Keep your head still.
 								</p>
 							</div>
 						</motion.div>
@@ -624,7 +749,7 @@ export function CalibrationWizard({
 							style={{
 								backgroundColor: "var(--color-accent)",
 								color: "var(--color-bg-primary)",
-								boxShadow: "0 0 30px var(--color-glow-cyan), 0 4px 16px rgba(0,0,0,0.3)",
+								boxShadow: "0 0 30px var(--color-glow-cyan)",
 							}}
 							whileHover={{ scale: 1.03 }}
 							whileTap={{ scale: 0.97 }}
@@ -651,7 +776,7 @@ export function CalibrationWizard({
 					</motion.div>
 				)}
 
-				{/* Stage 2: Calibration Points */}
+				{/* -------- Stage 2: Calibrating -------- */}
 				{stage === "calibrating" && (
 					<motion.div
 						key="calibrating"
@@ -690,23 +815,27 @@ export function CalibrationWizard({
 								progress={progress}
 								status={dotStatus}
 								warningText={warningText}
+								spaceHeld={spaceHeld}
 							/>
 						</AnimatePresence>
 
 						{/* Progress counter */}
 						<motion.div
-							className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[14px] font-medium"
+							className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 text-[14px] font-medium"
 							style={{ color: "var(--color-text-muted)" }}
 							initial={{ opacity: 0 }}
 							animate={{ opacity: 1 }}
 							transition={{ delay: 0.3 }}
 						>
-							{currentPoint + 1} / {CALIBRATION_POSITIONS.length}
+							<span>
+								{currentPoint + 1} / {CALIBRATION_POSITIONS.length}
+							</span>
+							<span className="text-[11px] px-2 py-0.5 rounded-md bg-white/5">Esc to cancel</span>
 						</motion.div>
 					</motion.div>
 				)}
 
-				{/* Stage 3: Complete */}
+				{/* -------- Stage 3: Complete -------- */}
 				{stage === "complete" && calibrationResult && (
 					<motion.div
 						key="complete"
@@ -717,7 +846,6 @@ export function CalibrationWizard({
 						transition={{ duration: 0.4 }}
 					>
 						<CelebrationBurst />
-
 						<AnimatedCheckmark />
 
 						<motion.h1
@@ -756,7 +884,7 @@ export function CalibrationWizard({
 							style={{
 								backgroundColor: "var(--color-success)",
 								color: "var(--color-bg-primary)",
-								boxShadow: "0 0 30px var(--color-glow-green), 0 4px 16px rgba(0,0,0,0.3)",
+								boxShadow: "0 0 30px var(--color-glow-green)",
 							}}
 							whileHover={{ scale: 1.03 }}
 							whileTap={{ scale: 0.97 }}
