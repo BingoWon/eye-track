@@ -202,7 +202,10 @@ export default function App() {
 		setShowGazeCursor(false);
 		clearHistory();
 		updateSettings(DEFAULT_SETTINGS);
-	}, [clearHistory, updateSettings]);
+		for (const id of trackerIds) {
+			fetch(`/api/trackers/${id}/range-calibrate`, { method: "DELETE" }).catch(() => {});
+		}
+	}, [clearHistory, updateSettings, trackerIds]);
 
 	const isFullscreenView = viewMode === "heatmap" || viewMode === "trail";
 

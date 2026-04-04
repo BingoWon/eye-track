@@ -150,62 +150,107 @@ class FrameProcessor:
         return ellipse, confidence
 
     MIN_ANGLE_DIFF = 2.0
-    ALPHA_WARMUP = 0.05  # fast convergence for first 100 rays
-    ALPHA_STABLE = 0.0005  # near-frozen once converged
-    WARMUP_RAYS = 100  # switch to stable alpha after this many rays
+    RAY_SAMPLE_COUNT = 5
+    ALPHA_WARMUP = 0.05
+    ALPHA_STABLE = 0.002  # ~500 frame effective window at 120fps
+    WARMUP_RAYS = 50
 
     def _compute_eye_center(self, frame: np.ndarray, ellipse: Optional[tuple]) -> tuple[int, int]:
-        """Estimate 2D eye center: 100-ray pool + best pair + adaptive EWMA.
+        """Estimate 2D eye center: random diverse sampling + EWMA.
 
-        Phase 1 (warmup): alpha=0.05, fast convergence (~1s)
-        Phase 2 (stable): alpha=0.0005, near-frozen (resists eye movement noise)
+        Combines the original's accuracy (random multi-ray sampling) with
+        EWMA's simplicity (no 1500-point buffer or double averaging).
+
+        1. Accumulate up to 100 rays
+        2. Random sample 5 rays, compute pairwise intersections (diverse)
+        3. Average this frame's intersections (within-frame robustness)
+        4. EWMA-fuse into running estimate (temporal smoothing)
         """
+        import random
+
         st = self.state
         h, w = frame.shape[:2]
 
         def current() -> tuple[int, int]:
             return (int(st.eye_center_avg[0]), int(st.eye_center_avg[1]))
 
-        if ellipse is not None:
-            st.ray_lines.append(ellipse)
-            if len(st.ray_lines) > st.MAX_RAYS:
-                st.ray_lines = st.ray_lines[-st.MAX_RAYS :]
-
-        if ellipse is None or len(st.ray_lines) < 2:
+        # No valid detection → keep current estimate, don't touch anything
+        if ellipse is None:
             return current()
 
-        # Find the ray with the largest angle difference from current
-        current_angle = ellipse[2]
-        best_ray = None
-        best_diff = 0.0
-        for ray in st.ray_lines[:-1]:
-            diff = abs(ray[2] - current_angle)
-            if diff > best_diff:
-                best_diff = diff
-                best_ray = ray
+        st.ray_lines.append(ellipse)
+        if len(st.ray_lines) > st.MAX_RAYS:
+            st.ray_lines = st.ray_lines[-st.MAX_RAYS :]
 
-        if best_ray is None or best_diff < self.MIN_ANGLE_DIFF:
+        if len(st.ray_lines) < 2:
             return current()
 
-        ix = self._intersect_ellipse_normals(best_ray, ellipse)
-        if ix is None or not (0 <= ix[0] < w and 0 <= ix[1] < h):
+        # Random diverse sampling (like original — avoids systematic bias)
+        sample_n = min(self.RAY_SAMPLE_COUNT, len(st.ray_lines))
+        selected = random.sample(st.ray_lines, sample_n)
+
+        # Compute pairwise intersections
+        frame_intersections: list[tuple[float, float]] = []
+        for i in range(len(selected) - 1):
+            e1, e2 = selected[i], selected[i + 1]
+            if abs(e1[2] - e2[2]) < self.MIN_ANGLE_DIFF:
+                continue
+            ix = self._intersect_ellipse_normals(e1, e2)
+            if ix and 0 <= ix[0] < w and 0 <= ix[1] < h:
+                frame_intersections.append(ix)
+
+        if not frame_intersections:
             return current()
 
-        # Adaptive alpha: fast warmup → near-frozen stable
-        ray_count = len(st.ray_lines)
-        a = self.ALPHA_WARMUP if ray_count < self.WARMUP_RAYS else self.ALPHA_STABLE
+        # Average this frame's intersections (within-frame noise reduction)
+        avg_x = sum(p[0] for p in frame_intersections) / len(frame_intersections)
+        avg_y = sum(p[1] for p in frame_intersections) / len(frame_intersections)
 
-        # EWMA update (float precision to avoid int truncation)
-        if st.eye_center_avg == (320.0, 240.0) and a >= self.ALPHA_WARMUP:
-            # First real update: jump directly to intersection
-            st.eye_center_avg = (float(ix[0]), float(ix[1]))
+        # Adaptive EWMA
+        a = self.ALPHA_WARMUP if len(st.ray_lines) < self.WARMUP_RAYS else self.ALPHA_STABLE
+
+        if st.eye_center_avg == (320.0, 240.0):
+            st.eye_center_avg = (avg_x, avg_y)
         else:
             st.eye_center_avg = (
-                a * ix[0] + (1 - a) * st.eye_center_avg[0],
-                a * ix[1] + (1 - a) * st.eye_center_avg[1],
+                a * avg_x + (1 - a) * st.eye_center_avg[0],
+                a * avg_y + (1 - a) * st.eye_center_avg[1],
             )
 
-        return (int(st.eye_center_avg[0]), int(st.eye_center_avg[1]))
+        # Also run original algorithm for A/B comparison
+        self._compute_original(frame)
+
+        return current()
+
+    def _compute_original(self, frame: np.ndarray) -> None:
+        """Original Orlosky algorithm (A/B comparison)."""
+        import random
+
+        st = self.state
+        h, w = frame.shape[:2]
+        if len(st.ray_lines) < 2:
+            return
+        selected = random.sample(st.ray_lines, min(5, len(st.ray_lines)))
+        for i in range(len(selected) - 1):
+            e1, e2 = selected[i], selected[i + 1]
+            if abs(e1[2] - e2[2]) < 2.0:
+                continue
+            ix = self._intersect_ellipse_normals(e1, e2)
+            if ix and 0 <= ix[0] < w and 0 <= ix[1] < h:
+                st.orig_intersections.append((int(ix[0]), int(ix[1])))
+        if len(st.orig_intersections) > 1500:
+            st.orig_intersections = st.orig_intersections[-1500:]
+        if not st.orig_intersections:
+            return
+        avg_x = int(np.mean([p[0] for p in st.orig_intersections]))
+        avg_y = int(np.mean([p[1] for p in st.orig_intersections]))
+        st.orig_centers.append((avg_x, avg_y))
+        if len(st.orig_centers) > 200:
+            st.orig_centers.pop(0)
+        fx = int(np.mean([p[0] for p in st.orig_centers]))
+        fy = int(np.mean([p[1] for p in st.orig_centers]))
+        if (fx, fy) != (w // 2, h // 2):
+            st.orig_avg = (fx, fy)
 
     @staticmethod
     def _intersect_ellipse_normals(e1: tuple, e2: tuple) -> Optional[tuple[float, float]]:
@@ -239,16 +284,29 @@ class FrameProcessor:
         tracking: dict = {
             "pupil": None,
             "eyeCenter": list(eye_center),
+            "eyeCenterOriginal": list(self.state.orig_avg),
             "gaze": None,
             "fps": 0.0,
             "confidence": round(confidence, 3),
             "timestamp": time.time(),
         }
 
-        # Eye boundary circle (blue)
+        # Eye boundary circle — EWMA (blue solid)
         cv2.circle(frame, eye_center, self.state.max_observed_distance, (255, 50, 50), 2)
-        # Eye center dot (cyan)
         cv2.circle(frame, eye_center, 8, (255, 255, 0), -1)
+
+        # Eye boundary circle — Original (red dashed) for A/B comparison
+        orig = self.state.orig_avg
+        if orig != (320, 240):
+            segments = 60
+            r = self.state.max_observed_distance
+            for i in range(0, segments, 2):
+                a1 = 2 * np.pi * i / segments
+                a2 = 2 * np.pi * (i + 1) / segments
+                p1 = (orig[0] + int(r * np.cos(a1)), orig[1] + int(r * np.sin(a1)))
+                p2 = (orig[0] + int(r * np.cos(a2)), orig[1] + int(r * np.sin(a2)))
+                cv2.line(frame, p1, p2, (0, 0, 255), 2)
+            cv2.circle(frame, orig, 8, (0, 0, 255), -1)
 
         # Pupil bounds ellipse (dashed green) — shows allowed pupil area
         bounds = self.state.pupil_bounds
