@@ -19,6 +19,15 @@ logger = logging.getLogger("eye-tracker")
 
 router = APIRouter(prefix="/api", tags=["settings"])
 
+SETTINGS_BOUNDS: dict[str, tuple[int, int]] = {
+    "threshold_strict": (1, 50),
+    "threshold_medium": (1, 50),
+    "threshold_relaxed": (1, 50),
+    "mask_size": (50, 500),
+    "stream_fps": (1, 120),
+    "jpeg_quality": (10, 100),
+}
+
 
 @router.post("/settings")
 async def update_settings(body: dict) -> JSONResponse:
@@ -35,6 +44,8 @@ async def update_settings(body: dict) -> JSONResponse:
     for key, attr in mapping.items():
         if key in body:
             val = int(body[key])
+            lo, hi = SETTINGS_BOUNDS.get(attr, (val, val))
+            val = max(lo, min(hi, val))
             setattr(settings, attr, val)
             updated[key] = val
 

@@ -11,12 +11,15 @@ interface GazeCursorProps {
 
 const TRAIL_LENGTH = 7;
 const SMOOTH_ALPHA = 0.3;
+const TRAIL_FADE_MS = 2000;
+
+type TrailPoint = { pos: [number, number]; time: number };
 
 export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) {
 	const previousPos = useRef<[number, number] | null>(null);
 	const [position, setPosition] = useState<[number, number] | null>(null);
-	const trailRef = useRef<[number, number][]>([]);
-	const [trail, setTrail] = useState<[number, number][]>([]);
+	const trailRef = useRef<TrailPoint[]>([]);
+	const [trail, setTrail] = useState<TrailPoint[]>([]);
 
 	useEffect(() => {
 		if (!visible || !calibration || !tracking?.pupil?.center) {
@@ -43,8 +46,9 @@ export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) 
 
 		setPosition(px);
 
-		// Update trail
-		trailRef.current = [...trailRef.current, px].slice(-TRAIL_LENGTH);
+		// Update trail with timestamps
+		const now = Date.now();
+		trailRef.current = [...trailRef.current, { pos: px, time: now }].slice(-TRAIL_LENGTH);
 		setTrail([...trailRef.current]);
 	}, [tracking, calibration, visible]);
 
@@ -59,17 +63,21 @@ export function GazeCursor({ tracking, calibration, visible }: GazeCursorProps) 
 				{position && (
 					<>
 						{/* Trail dots */}
-						{trail.slice(0, -1).map((pos, i) => {
-							const age = (trail.length - 1 - i) / trail.length;
-							const opacity = (1 - age) * 0.25 * cursorOpacity;
-							const size = 20 * (1 - age * 0.5);
+						{trail.slice(0, -1).map((point, i) => {
+							const now = Date.now();
+							const ageMs = now - point.time;
+							const timeFade = Math.max(0, 1 - ageMs / TRAIL_FADE_MS);
+							const indexFade = (trail.length - 1 - i) / trail.length;
+							const opacity = (1 - indexFade) * 0.25 * cursorOpacity * timeFade;
+							const size = 20 * (1 - indexFade * 0.5);
+							if (opacity <= 0) return null;
 							return (
 								<div
-									key={`trail-${pos[0].toFixed(1)}-${pos[1].toFixed(1)}`}
+									key={`trail-${point.pos[0].toFixed(1)}-${point.pos[1].toFixed(1)}`}
 									className="absolute rounded-full"
 									style={{
-										left: pos[0] - size / 2,
-										top: pos[1] - size / 2,
+										left: point.pos[0] - size / 2,
+										top: point.pos[1] - size / 2,
 										width: size,
 										height: size,
 										backgroundColor: "var(--color-accent)",

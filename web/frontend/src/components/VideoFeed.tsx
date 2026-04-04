@@ -12,7 +12,6 @@ interface VideoFeedProps {
 
 export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: VideoFeedProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
-	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	const isActive = tracking !== null && tracking.confidence > 0;
 
@@ -70,11 +69,6 @@ export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: Video
 								alt="Camera feed"
 								className="w-full h-full object-contain rounded-sm"
 								draggable={false}
-							/>
-							{/* Canvas overlay for future drawing */}
-							<canvas
-								ref={canvasRef}
-								className="absolute inset-0 w-full h-full pointer-events-none"
 							/>
 						</motion.div>
 					) : (

@@ -224,15 +224,18 @@ export function Header({
 					</button>
 				)}
 
-				{/* Gaze cursor toggle — only show after calibration */}
-				{onToggleGazeCursor && calibration && (
+				{/* Gaze cursor toggle — always visible, disabled when uncalibrated */}
+				{onToggleGazeCursor && (
 					<button
 						type="button"
-						onClick={onToggleGazeCursor}
-						className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all duration-200 cursor-pointer border ${
-							showGazeCursor
-								? "bg-[var(--color-accent)]/8 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent)]/15"
-								: "bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border-[var(--color-border)]/40 hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-active)]/40"
+						onClick={calibration ? onToggleGazeCursor : undefined}
+						disabled={!calibration}
+						className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all duration-200 border ${
+							!calibration
+								? "opacity-40 cursor-not-allowed bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border-[var(--color-border)]/40"
+								: showGazeCursor
+									? "bg-[var(--color-accent)]/8 text-[var(--color-accent)] border-[var(--color-accent)]/15 hover:bg-[var(--color-accent)]/15 cursor-pointer"
+									: "bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border-[var(--color-border)]/40 hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-active)]/40 cursor-pointer"
 						}`}
 					>
 						<MousePointer className="w-3 h-3" />

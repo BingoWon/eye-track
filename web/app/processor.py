@@ -120,6 +120,7 @@ class FrameProcessor:
         if optimized and not isinstance(optimized[0], list) and len(optimized[0]) > 5:
             ellipse = cv2.fitEllipse(optimized[0])
             # Confidence: normalize goodness to 0-1 range (heuristic)
+            # Heuristic: goodness values typically range 0–1e8 for well-fitted ellipses
             confidence = min(1.0, best_goodness / 1e8) if best_goodness > 0 else 0.0
             return ellipse, confidence
 
@@ -153,7 +154,7 @@ class FrameProcessor:
         if model_center is not None:
             model_center_average = update_and_average_point(st.model_centers, model_center, 200)
 
-        if model_center_average[0] == 320:
+        if model_center_average == (320, 240):
             model_center_average = st.prev_model_center_avg
         if model_center_average[0] != 0:
             st.prev_model_center_avg = model_center_average
@@ -292,14 +293,10 @@ def _compute_gaze_vector_no_file(
 
     discriminant = b**2 - 4 * a * c
     if discriminant < 0:
+        # No intersection — use closest approach point on the ray
         t = -np.dot(direction, L) / np.dot(direction, direction)
-        intersection_point = origin + t * direction
-        intersection_local = intersection_point - sphere_center
-        norm = np.linalg.norm(intersection_local)
-        if norm < 1e-10:
-            return None, None
-        target_direction = intersection_local / norm
     else:
+        # Actual ray-sphere intersection
         sqrt_disc = np.sqrt(discriminant)
         t1 = (-b - sqrt_disc) / (2 * a)
         t2 = (-b + sqrt_disc) / (2 * a)
@@ -313,21 +310,6 @@ def _compute_gaze_vector_no_file(
             t = t2
         if t is None:
             return None, None
-
-    # Recompute final intersection
-    sqrt_disc = np.sqrt(max(discriminant, 0))
-    t1 = (-b - sqrt_disc) / (2 * a)
-    t2 = (-b + sqrt_disc) / (2 * a)
-
-    t = None
-    if t1 > 0 and t2 > 0:
-        t = min(t1, t2)
-    elif t1 > 0:
-        t = t1
-    elif t2 > 0:
-        t = t2
-    if t is None:
-        return None, None
 
     intersection_point = origin + t * direction
     intersection_local = intersection_point - sphere_center

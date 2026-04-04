@@ -1,4 +1,3 @@
-import { Route } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 import { type CalibrationResult, applyCalibration } from "../lib/calibration";
 import type { TrackingData, TrackingHistory } from "../types/tracking";
@@ -246,45 +245,26 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 	const displayCount = Math.min(n, MAX_TRAIL_POINTS);
 
 	return (
-		<div className="glass rounded-2xl border border-[var(--color-border)]/80 flex flex-col overflow-hidden h-full">
-			{/* Header */}
-			<div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)]/60 shrink-0">
-				<div className="flex items-center gap-2.5">
-					<div className="w-6 h-6 rounded-md bg-[var(--color-accent)]/8 flex items-center justify-center border border-[var(--color-accent)]/10">
-						<Route className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+		<div className="relative w-full h-full overflow-hidden">
+			{/* Canvas — fills entire area */}
+			<canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+
+			{/* Floating info overlay */}
+			<div className="absolute top-3 right-3 flex flex-col items-end gap-1.5 pointer-events-none">
+				<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
+					{displayCount} pts / {n} total
+				</div>
+				{tracking?.gaze && (
+					<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
+						Dir ({tracking.gaze.direction[0].toFixed(2)}, {tracking.gaze.direction[1].toFixed(2)},{" "}
+						{tracking.gaze.direction[2].toFixed(2)})
 					</div>
-					<span className="text-[13px] font-semibold text-[var(--color-text-primary)] tracking-tight">
-						Gaze Trail
-					</span>
-				</div>
-				<div className="flex items-center gap-2 text-[10px] font-mono">
-					<span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border border-[var(--color-border)]/40 tabular-nums">
-						{displayCount} pts
-					</span>
-					<span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border border-[var(--color-border)]/40 tabular-nums">
-						{n} total
-					</span>
-				</div>
-			</div>
-
-			{/* Canvas */}
-			<div className="flex-1 relative min-h-0">
-				<canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-
-				{/* Top-right overlay info */}
-				<div className="absolute top-3 right-3 flex flex-col items-end gap-1.5 pointer-events-none">
-					{tracking?.gaze && (
-						<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
-							Dir ({tracking.gaze.direction[0].toFixed(2)}, {tracking.gaze.direction[1].toFixed(2)},{" "}
-							{tracking.gaze.direction[2].toFixed(2)})
-						</div>
-					)}
-					{tracking?.pupil && (
-						<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
-							Pupil {tracking.pupil.axes[0].toFixed(1)} x {tracking.pupil.axes[1].toFixed(1)}
-						</div>
-					)}
-				</div>
+				)}
+				{tracking?.pupil && (
+					<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
+						Pupil {tracking.pupil.axes[0].toFixed(1)} x {tracking.pupil.axes[1].toFixed(1)}
+					</div>
+				)}
 			</div>
 		</div>
 	);

@@ -6,6 +6,7 @@ import type { TrackingHistory } from "../types/tracking";
 
 interface GazeHeatmapProps {
 	history: TrackingHistory;
+	historyVersion: number;
 	onClear: () => void;
 	calibration?: CalibrationResult | null;
 }
@@ -14,7 +15,7 @@ const SRC_W = 640;
 const SRC_H = 480;
 const BLOB_RADIUS = 40;
 
-export function GazeHeatmap({ history, onClear, calibration }: GazeHeatmapProps) {
+export function GazeHeatmap({ history, historyVersion, onClear, calibration }: GazeHeatmapProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -37,8 +38,9 @@ export function GazeHeatmap({ history, onClear, calibration }: GazeHeatmapProps)
 		return () => window.removeEventListener("resize", resizeCanvas);
 	}, [resizeCanvas]);
 
-	/* Draw heatmap */
+	/* Draw heatmap — historyVersion triggers re-draw when history mutates */
 	useEffect(() => {
+		void historyVersion; // referenced to satisfy exhaustive-deps
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 		const ctx = canvas.getContext("2d");
@@ -201,73 +203,56 @@ export function GazeHeatmap({ history, onClear, calibration }: GazeHeatmapProps)
 		});
 
 		return () => cancelAnimationFrame(id);
-	}, [history, calibration]);
+	}, [history, historyVersion, calibration]);
 
 	return (
-		<motion.div
-			initial={{ opacity: 0 }}
-			animate={{ opacity: 1 }}
-			transition={{ duration: 0.4 }}
-			className="glass rounded-2xl border border-[var(--color-border)]/80 flex flex-col overflow-hidden h-full"
-		>
-			{/* Header */}
-			<div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)]/60 shrink-0">
-				<div className="flex items-center gap-2.5">
-					<div className="w-6 h-6 rounded-md bg-[var(--color-accent)]/8 flex items-center justify-center border border-[var(--color-accent)]/10">
-						<Flame className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-					</div>
-					<h2 className="text-[13px] font-semibold text-[var(--color-text-primary)] tracking-tight">
-						Gaze Heatmap
-					</h2>
-				</div>
-				<div className="flex items-center gap-3">
-					<span className="text-[10px] font-mono text-[var(--color-text-muted)] tabular-nums px-2 py-0.5 rounded-md bg-[var(--color-bg-primary)]/40 border border-[var(--color-border)]/40">
-						{history.gazePoints.length.toLocaleString()} pts
-					</span>
-					<button
-						type="button"
-						onClick={onClear}
-						className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/8 border border-[var(--color-border)]/60 hover:border-[var(--color-danger)]/20 transition-all duration-200 cursor-pointer"
-					>
-						<Trash2 className="w-3 h-3" />
-						Clear
-					</button>
-				</div>
+		<div ref={containerRef} className="relative w-full h-full overflow-hidden">
+			{/* Canvas — fills entire area */}
+			<canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+
+			{/* Floating controls overlay */}
+			<div className="absolute top-3 right-3 flex items-center gap-2 pointer-events-auto">
+				<span className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30 tabular-nums pointer-events-none">
+					{history.gazePoints.length.toLocaleString()} pts
+				</span>
+				<button
+					type="button"
+					onClick={onClear}
+					className="glass-frosted flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/8 border border-[var(--color-border)]/30 hover:border-[var(--color-danger)]/20 transition-all duration-200 cursor-pointer"
+				>
+					<Trash2 className="w-3 h-3" />
+					Clear
+				</button>
 			</div>
 
-			{/* Canvas */}
-			<div ref={containerRef} className="flex-1 relative min-h-0">
-				<canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-
-				{/* Empty state */}
-				{history.gazePoints.length === 0 && (
+			{/* Empty state */}
+			{history.gazePoints.length === 0 && (
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.2 }}
+					className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+				>
 					<motion.div
-						initial={{ opacity: 0, y: 8 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.5, delay: 0.2 }}
-						className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+						animate={{ y: [0, -4, 0] }}
+						transition={{
+							duration: 2.5,
+							repeat: Number.POSITIVE_INFINITY,
+							ease: "easeInOut",
+						}}
 					>
-						<motion.div
-							animate={{ y: [0, -4, 0] }}
-							transition={{
-								duration: 2.5,
-								repeat: Number.POSITIVE_INFINITY,
-								ease: "easeInOut",
-							}}
-						>
-							<Flame className="w-8 h-8 text-[var(--color-text-muted)] opacity-25" />
-						</motion.div>
-						<div className="flex flex-col items-center gap-1">
-							<span className="text-[13px] font-medium text-[var(--color-text-muted)]">
-								No gaze data yet
-							</span>
-							<span className="text-[11px] text-[var(--color-text-muted)]/50">
-								Start tracking to see the heatmap
-							</span>
-						</div>
+						<Flame className="w-8 h-8 text-[var(--color-text-muted)] opacity-25" />
 					</motion.div>
-				)}
-			</div>
-		</motion.div>
+					<div className="flex flex-col items-center gap-1">
+						<span className="text-[13px] font-medium text-[var(--color-text-muted)]">
+							No gaze data yet
+						</span>
+						<span className="text-[11px] text-[var(--color-text-muted)]/50">
+							Start tracking to see the heatmap
+						</span>
+					</div>
+				</motion.div>
+			)}
+		</div>
 	);
 }

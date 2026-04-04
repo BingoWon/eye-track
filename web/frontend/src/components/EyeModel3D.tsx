@@ -123,7 +123,7 @@ function EyeScene({ tracking }: { tracking: TrackingData | null }) {
 				</Sphere>
 
 				{/* Iris / pupil ring */}
-				<mesh ref={irisGlowRef} position={[0, 0, 0.88]} rotation={[Math.PI / 2, 0, 0]}>
+				<mesh ref={irisGlowRef} position={[0, 0, 0.88]}>
 					<torusGeometry args={[irisRadius, irisTube, 16, 64]} />
 					<meshStandardMaterial color="#34d399" emissive="#34d399" emissiveIntensity={0.25} />
 				</mesh>

@@ -27,8 +27,15 @@ export default function App() {
 	const [showGazeCursor, setShowGazeCursor] = useState(false);
 	const [paused, setPaused] = useState(false);
 	const pausedBeforeCalibrationRef = useRef(false);
-	const { currentData, currentImage, history, clientFps, handleFrame, clearHistory } =
-		useTrackingData();
+	const {
+		currentData,
+		currentImage,
+		history,
+		historyVersion,
+		clientFps,
+		handleFrame,
+		clearHistory,
+	} = useTrackingData();
 
 	const wsUrl = `ws://${window.location.hostname}:${window.location.port || "5173"}/ws`;
 	const { status: connectionStatus, send } = useWebSocket({
@@ -114,7 +121,7 @@ export default function App() {
 				onTogglePause={() => setPausedAndSync(!paused)}
 			/>
 
-			<main className="flex-1 p-3 overflow-hidden">
+			<main className={`flex-1 overflow-hidden ${viewMode === "dashboard" ? "p-3" : ""}`}>
 				{viewMode === "dashboard" && (
 					<div
 						className={`h-full grid gap-3 ${
@@ -157,7 +164,12 @@ export default function App() {
 					</div>
 				)}
 				{viewMode === "heatmap" && (
-					<GazeHeatmap history={history} onClear={clearHistory} calibration={calibration} />
+					<GazeHeatmap
+						history={history}
+						historyVersion={historyVersion}
+						onClear={clearHistory}
+						calibration={calibration}
+					/>
 				)}
 				{viewMode === "trail" && (
 					<GazeTrail history={history} tracking={currentData} calibration={calibration} />

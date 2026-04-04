@@ -13,6 +13,7 @@ export function useTrackingData() {
 		pupilSizes: [],
 	});
 	const [frameCount, setFrameCount] = useState(0);
+	const [historyVersion, setHistoryVersion] = useState(0);
 	const fpsRef = useRef({ count: 0, lastTime: Date.now(), value: 0 });
 
 	const handleFrame = useCallback((image: string, tracking: TrackingData) => {
@@ -48,6 +49,9 @@ export function useTrackingData() {
 			h.gazeDirections = h.gazeDirections.slice(-MAX_HISTORY);
 			h.pupilSizes = h.pupilSizes.slice(-MAX_HISTORY);
 		}
+
+		// Bump version so consumers re-render
+		setHistoryVersion((v) => v + 1);
 	}, []);
 
 	const clearHistory = useCallback(() => {
@@ -63,6 +67,7 @@ export function useTrackingData() {
 		currentData,
 		currentImage,
 		history: historyRef.current,
+		historyVersion,
 		frameCount,
 		clientFps: fpsRef.current.value,
 		handleFrame,

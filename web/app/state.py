@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import threading
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -73,43 +72,8 @@ latest_tracking: dict = {}
 paused: bool = False
 
 
-def _create_singletons() -> None:
-    """Import and instantiate CameraManager / FrameProcessor.
+from web.app.camera import CameraManager  # noqa: E402
+from web.app.processor import FrameProcessor  # noqa: E402
 
-    Called lazily so that camera.py and processor.py can be imported
-    without circular-import issues.
-    """
-    global camera_mgr, processor  # noqa: PLW0603
-
-    from web.app.camera import CameraManager
-    from web.app.processor import FrameProcessor
-
-    camera_mgr = CameraManager()
-    processor = FrameProcessor(settings, tracking_state)
-
-
-# Placeholders so static analysis can see the names exist.
-if TYPE_CHECKING:
-    from web.app.camera import CameraManager as _CM
-    from web.app.processor import FrameProcessor as _FP
-
-camera_mgr: _CM = None  # type: ignore[assignment]
-processor: _FP = None  # type: ignore[assignment]
-
-_init_lock = threading.Lock()
-_initialized = False
-
-
-def ensure_initialized() -> None:
-    """Thread-safe one-time initialization of camera_mgr / processor."""
-    global _initialized  # noqa: PLW0603
-    if _initialized:
-        return
-    with _init_lock:
-        if not _initialized:
-            _create_singletons()
-            _initialized = True
-
-
-# Eagerly initialize on import.
-ensure_initialized()
+camera_mgr = CameraManager()
+processor = FrameProcessor(settings, tracking_state)
