@@ -224,8 +224,8 @@ export function Header({
 					</button>
 				)}
 
-				{/* Gaze cursor toggle */}
-				{onToggleGazeCursor && (
+				{/* Gaze cursor toggle — only show after calibration */}
+				{onToggleGazeCursor && calibration && (
 					<button
 						type="button"
 						onClick={onToggleGazeCursor}

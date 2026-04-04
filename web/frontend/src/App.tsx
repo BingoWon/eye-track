@@ -94,6 +94,8 @@ export default function App() {
 		setCalibration(result);
 		setShowCalibration(false);
 		setShowGazeCursor(true);
+		// Clear old history — pre-calibration data is invalid
+		clearHistory();
 	};
 
 	return (
@@ -154,8 +156,12 @@ export default function App() {
 						)}
 					</div>
 				)}
-				{viewMode === "heatmap" && <GazeHeatmap history={history} onClear={clearHistory} />}
-				{viewMode === "trail" && <GazeTrail history={history} tracking={currentData} />}
+				{viewMode === "heatmap" && (
+					<GazeHeatmap history={history} onClear={clearHistory} calibration={calibration} />
+				)}
+				{viewMode === "trail" && (
+					<GazeTrail history={history} tracking={currentData} calibration={calibration} />
+				)}
 			</main>
 
 			{/* Calibration overlay */}

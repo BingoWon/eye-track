@@ -1,18 +1,20 @@
 import { motion } from "framer-motion";
 import { Flame, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
+import { type CalibrationResult, applyCalibration } from "../lib/calibration";
 import type { TrackingHistory } from "../types/tracking";
 
 interface GazeHeatmapProps {
 	history: TrackingHistory;
 	onClear: () => void;
+	calibration?: CalibrationResult | null;
 }
 
 const SRC_W = 640;
 const SRC_H = 480;
 const BLOB_RADIUS = 40;
 
-export function GazeHeatmap({ history, onClear }: GazeHeatmapProps) {
+export function GazeHeatmap({ history, onClear, calibration }: GazeHeatmapProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -47,12 +49,14 @@ export function GazeHeatmap({ history, onClear }: GazeHeatmapProps) {
 			const h = canvas.height;
 			const dpr = window.devicePixelRatio || 1;
 
-			// Scale factors
-			const scaleX = w / SRC_W;
-			const scaleY = h / SRC_H;
-			const scale = Math.min(scaleX, scaleY);
-			const offX = (w - SRC_W * scale) / 2;
-			const offY = (h - SRC_H * scale) / 2;
+			// When calibrated, use full canvas (screen space 0-1).
+			// When not calibrated, map from 640x480 camera space.
+			const useCalibrated = !!calibration;
+			const scaleX = useCalibrated ? w : w / SRC_W;
+			const scaleY = useCalibrated ? h : h / SRC_H;
+			const scale = useCalibrated ? 1 : Math.min(scaleX, scaleY);
+			const offX = useCalibrated ? 0 : (w - SRC_W * scale) / 2;
+			const offY = useCalibrated ? 0 : (h - SRC_H * scale) / 2;
 
 			ctx.clearRect(0, 0, w, h);
 
@@ -114,13 +118,21 @@ export function GazeHeatmap({ history, onClear }: GazeHeatmapProps) {
 				ctx.save();
 				ctx.globalCompositeOperation = "lighter";
 
-				const radius = BLOB_RADIUS * scale * (1 / dpr) * dpr;
+				const radius = BLOB_RADIUS * (useCalibrated ? dpr : scale * (1 / dpr) * dpr);
 				const points = history.gazePoints;
 
 				for (let i = 0; i < points.length; i++) {
 					const [px, py] = points[i];
-					const cx = offX + px * scale;
-					const cy = offY + py * scale;
+					let cx: number;
+					let cy: number;
+					if (calibration) {
+						const [sx, sy] = applyCalibration([px, py], calibration);
+						cx = sx * w;
+						cy = sy * h;
+					} else {
+						cx = offX + px * scale;
+						cy = offY + py * scale;
+					}
 
 					const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
 					gradient.addColorStop(0, "rgba(34, 211, 238, 0.05)");
@@ -140,8 +152,16 @@ export function GazeHeatmap({ history, onClear }: GazeHeatmapProps) {
 				// Draw the most recent point
 				if (points.length > 0) {
 					const [lx, ly] = points[points.length - 1];
-					const lcx = offX + lx * scale;
-					const lcy = offY + ly * scale;
+					let lcx: number;
+					let lcy: number;
+					if (calibration) {
+						const [sx, sy] = applyCalibration([lx, ly], calibration);
+						lcx = sx * w;
+						lcy = sy * h;
+					} else {
+						lcx = offX + lx * scale;
+						lcy = offY + ly * scale;
+					}
 
 					// Outer glow
 					const glow = ctx.createRadialGradient(lcx, lcy, 0, lcx, lcy, 16 * dpr);
@@ -181,7 +201,7 @@ export function GazeHeatmap({ history, onClear }: GazeHeatmapProps) {
 		});
 
 		return () => cancelAnimationFrame(id);
-	}, [history]);
+	}, [history, calibration]);
 
 	return (
 		<motion.div

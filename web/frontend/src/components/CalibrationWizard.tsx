@@ -20,24 +20,25 @@ type Stage = "intro" | "calibrating" | "complete";
 type DotStatus = "waiting" | "collecting" | "success" | "failed";
 
 /*
- * 9-point calibration grid — row-major left-to-right, top-to-bottom.
- * This ordering minimizes saccade distance between consecutive points
- * and ensures even coverage. Padding = 15% to avoid extreme gaze angles.
+ * 9-point calibration grid — serpentine (boustrophedon) ordering.
+ * Row 1 goes left→right, row 2 goes right→left, row 3 goes left→right.
+ * This minimizes saccade distance between consecutive points.
+ * Padding = 15% to avoid extreme gaze angles.
  *
- *   1 --- 2 --- 3
- *   |     |     |
- *   4 --- 5 --- 6
- *   |     |     |
- *   7 --- 8 --- 9
+ *   1 --→ 2 --→ 3
+ *                |
+ *   6 ←-- 5 ←-- 4
+ *   |
+ *   7 --→ 8 --→ 9
  */
 const CALIBRATION_POSITIONS: [number, number][] = [
 	[0.15, 0.15], // 1  top-left
 	[0.5, 0.15], //  2  top-center
 	[0.85, 0.15], // 3  top-right
-	[0.15, 0.5], //  4  left-center
+	[0.85, 0.5], //  4  right-center  (row 2, start from right)
 	[0.5, 0.5], //   5  center
-	[0.85, 0.5], //  6  right-center
-	[0.15, 0.85], // 7  bottom-left
+	[0.15, 0.5], //  6  left-center
+	[0.15, 0.85], // 7  bottom-left   (row 3, start from left)
 	[0.5, 0.85], //  8  bottom-center
 	[0.85, 0.85], // 9  bottom-right
 ];

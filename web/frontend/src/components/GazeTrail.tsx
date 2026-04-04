@@ -1,17 +1,19 @@
 import { Route } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
+import { type CalibrationResult, applyCalibration } from "../lib/calibration";
 import type { TrackingData, TrackingHistory } from "../types/tracking";
 
 interface GazeTrailProps {
 	history: TrackingHistory;
 	tracking: TrackingData | null;
+	calibration?: CalibrationResult | null;
 }
 
 const SOURCE_W = 640;
 const SOURCE_H = 480;
 const MAX_TRAIL_POINTS = 500;
 
-export function GazeTrail({ history, tracking }: GazeTrailProps) {
+export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const animRef = useRef<number>(0);
 	const timeRef = useRef<number>(0);
@@ -56,16 +58,26 @@ export function GazeTrail({ history, tracking }: GazeTrailProps) {
 			}
 		}
 
-		// Map source coordinates to canvas
+		// Pre-map all points to canvas coordinates
 		const scaleX = w / SOURCE_W;
 		const scaleY = h / SOURCE_H;
-		const mapX = (sx: number) => sx * scaleX;
-		const mapY = (sy: number) => sy * scaleY;
+
+		// Build mapped points array once
+		const mappedPoints: [number, number][] = [];
+		const rawPoints = history.gazePoints;
+		for (let i = 0; i < rawPoints.length; i++) {
+			const [px, py] = rawPoints[i];
+			if (calibration) {
+				const [sx, sy] = applyCalibration([px, py], calibration);
+				mappedPoints.push([sx * w, sy * h]);
+			} else {
+				mappedPoints.push([px * scaleX, py * scaleY]);
+			}
+		}
 
 		// Get recent points
-		const points = history.gazePoints;
 		const sizes = history.pupilSizes;
-		const n = points.length;
+		const n = mappedPoints.length;
 		const start = Math.max(0, n - MAX_TRAIL_POINTS);
 		const count = n - start;
 
@@ -102,10 +114,10 @@ export function GazeTrail({ history, tracking }: GazeTrailProps) {
 				const progress = i / count;
 				const alpha = progress * 0.7;
 
-				const x0 = mapX(points[prevIdx][0]);
-				const y0 = mapY(points[prevIdx][1]);
-				const x1 = mapX(points[idx][0]);
-				const y1 = mapY(points[idx][1]);
+				const x0 = mappedPoints[prevIdx][0];
+				const y0 = mappedPoints[prevIdx][1];
+				const x1 = mappedPoints[idx][0];
+				const y1 = mappedPoints[idx][1];
 
 				// Use quadratic bezier with midpoint
 				const mx = (x0 + x1) / 2;
@@ -125,8 +137,8 @@ export function GazeTrail({ history, tracking }: GazeTrailProps) {
 					ctx.lineTo(mx, my);
 				} else {
 					const prevPrevIdx = prevIdx - 1;
-					const xpp = mapX(points[prevPrevIdx][0]);
-					const ypp = mapY(points[prevPrevIdx][1]);
+					const xpp = mappedPoints[prevPrevIdx][0];
+					const ypp = mappedPoints[prevPrevIdx][1];
 					const prevMx = (xpp + x0) / 2;
 					const prevMy = (ypp + y0) / 2;
 					ctx.moveTo(prevMx, prevMy);
@@ -139,8 +151,8 @@ export function GazeTrail({ history, tracking }: GazeTrailProps) {
 		// Draw points with refined rendering
 		for (let i = 0; i < count; i++) {
 			const idx = start + i;
-			const x = mapX(points[idx][0]);
-			const y = mapY(points[idx][1]);
+			const x = mappedPoints[idx][0];
+			const y = mappedPoints[idx][1];
 			const progress = (i + 1) / count;
 			const alpha = progress * 0.8;
 
@@ -169,8 +181,8 @@ export function GazeTrail({ history, tracking }: GazeTrailProps) {
 		// Current point: pulsing glow
 		if (count > 0) {
 			const lastIdx = n - 1;
-			const cx = mapX(points[lastIdx][0]);
-			const cy = mapY(points[lastIdx][1]);
+			const cx = mappedPoints[lastIdx][0];
+			const cy = mappedPoints[lastIdx][1];
 			const time = timeRef.current;
 			const pulse = 0.5 + 0.5 * Math.sin(time * 3.5);
 			const glowRadius = 14 + pulse * 10;
@@ -222,7 +234,7 @@ export function GazeTrail({ history, tracking }: GazeTrailProps) {
 		// Update time
 		timeRef.current += 1 / 60;
 		animRef.current = requestAnimationFrame(draw);
-	}, [history]);
+	}, [history, calibration]);
 
 	useEffect(() => {
 		animRef.current = requestAnimationFrame(draw);
