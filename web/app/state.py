@@ -24,7 +24,7 @@ class TrackingSettings:
     threshold_medium: int = 15
     threshold_relaxed: int = 25
     mask_size: int = 250
-    stream_fps: int = 30
+    stream_fps: int = 120
     jpeg_quality: int = 80
 
 

@@ -57,6 +57,6 @@ export const DEFAULT_SETTINGS: Settings = {
 	thresholdMedium: 15,
 	thresholdRelaxed: 25,
 	maskSize: 250,
-	streamFps: 30,
+	streamFps: 120,
 	jpegQuality: 80,
 };
