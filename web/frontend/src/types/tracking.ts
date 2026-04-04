@@ -30,18 +30,6 @@ export interface FrameMessage {
 	trackers: TrackerFrame[];
 }
 
-export interface StatusMessage {
-	type: "status";
-	camera: {
-		index: number;
-		resolution: [number, number];
-		fps: number;
-	};
-	connected: boolean;
-}
-
-export type ServerMessage = FrameMessage | StatusMessage;
-
 export interface Settings {
 	thresholdStrict: number;
 	thresholdMedium: number;
@@ -50,6 +38,8 @@ export interface Settings {
 	streamFps: number;
 	jpegQuality: number;
 	minConfidence: number;
+	maxAspectRatio: number;
+	rangeMargin: number;
 }
 
 export interface TrackingHistory {
@@ -67,4 +57,6 @@ export const DEFAULT_SETTINGS: Settings = {
 	streamFps: 120,
 	jpegQuality: 80,
 	minConfidence: 0.3,
+	maxAspectRatio: 2.5,
+	rangeMargin: 1.1,
 };

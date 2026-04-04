@@ -17,7 +17,6 @@ export function useTrackingData() {
 		pupilSizes: [],
 	});
 	const [historyVersion, setHistoryVersion] = useState(0);
-	const fpsRef = useRef({ count: 0, lastTime: Date.now(), value: 0 });
 
 	const handleFrame = useCallback((frames: TrackerFrame[]) => {
 		setTrackers((prev) => {
@@ -31,16 +30,7 @@ export function useTrackingData() {
 			return next;
 		});
 
-		// Calculate client-side FPS
-		fpsRef.current.count++;
-		const now = Date.now();
-		if (now - fpsRef.current.lastTime >= 1000) {
-			fpsRef.current.value = fpsRef.current.count;
-			fpsRef.current.count = 0;
-			fpsRef.current.lastTime = now;
-		}
-
-		// Update history — aggregate pupil data from ALL trackers
+		// Update history — aggregate pupil data from ALL cameras
 		const h = historyRef.current;
 		for (const frame of frames) {
 			const tracking = frame.tracking;
@@ -80,7 +70,6 @@ export function useTrackingData() {
 		trackers,
 		history: historyRef.current,
 		historyVersion,
-		clientFps: fpsRef.current.value,
 		handleFrame,
 		clearHistory,
 	};

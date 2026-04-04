@@ -1,15 +1,13 @@
 import { OrbitControls, Sphere } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { motion } from "framer-motion";
-import { Box, Maximize2, Minimize2 } from "lucide-react";
+import { Box } from "lucide-react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { TrackingData } from "../types/tracking";
 
 interface EyeModel3DProps {
 	tracking: TrackingData | null;
-	isExpanded: boolean;
-	onToggleExpand: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -142,7 +140,7 @@ function EyeScene({ tracking }: { tracking: TrackingData | null }) {
 /*  Outer panel component                                             */
 /* ------------------------------------------------------------------ */
 
-export function EyeModel3D({ tracking, isExpanded, onToggleExpand }: EyeModel3DProps) {
+export function EyeModel3D({ tracking }: EyeModel3DProps) {
 	return (
 		<motion.div
 			layout
@@ -166,17 +164,6 @@ export function EyeModel3D({ tracking, isExpanded, onToggleExpand }: EyeModel3DP
 						</span>
 					)}
 				</div>
-				<button
-					type="button"
-					onClick={onToggleExpand}
-					className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer"
-				>
-					{isExpanded ? (
-						<Minimize2 className="w-3.5 h-3.5" />
-					) : (
-						<Maximize2 className="w-3.5 h-3.5" />
-					)}
-				</button>
 			</div>
 
 			{/* Canvas */}

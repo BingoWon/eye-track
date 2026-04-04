@@ -19,8 +19,10 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 from web.app.broadcast import broadcast_loop  # noqa: E402
-from web.app.routers import cameras, recording, settings, ws  # noqa: E402
+from web.app.persistence import apply_range_calibration, apply_settings, load_config  # noqa: E402
+from web.app.routers import cameras, settings, ws  # noqa: E402
 from web.app.state import registry  # noqa: E402
+from web.app.state import settings as app_settings  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -40,8 +42,20 @@ logger = logging.getLogger("eye-tracker")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: no auto-detection -- user selects cameras in the frontend
-    logger.info("Server starting (no cameras opened -- waiting for user selection)")
+    # Startup: restore config from disk
+    config = load_config()
+    if config:
+        apply_settings(app_settings, config)
+        cam_indices = config.get("cameras", [])
+        for idx in cam_indices:
+            try:
+                instance = registry.add(int(idx), app_settings)
+                apply_range_calibration(instance.state, int(idx), config)
+            except RuntimeError:
+                logger.warning("Could not open saved camera %d", idx)
+        logger.info("Restored %d trackers from config", len(registry.trackers))
+    else:
+        logger.info("No saved config — waiting for user selection")
 
     broadcast_task = asyncio.create_task(broadcast_loop())
 
@@ -79,7 +93,6 @@ app.add_middleware(
 app.include_router(ws.router)
 app.include_router(cameras.router)
 app.include_router(settings.router)
-app.include_router(recording.router)
 
 # ---------------------------------------------------------------------------
 # Serve frontend static files (must be last so it doesn't shadow API routes)

@@ -12,7 +12,6 @@ import cv2
 
 from web.app import state
 from web.app.state import (
-    recording,
     registry,
     settings,
     ws_clients,
@@ -22,7 +21,7 @@ logger = logging.getLogger("eye-tracker")
 
 
 async def broadcast_loop() -> None:
-    """Grab the latest camera frame from every active tracker, process it,
+    """Grab the latest camera frame from every active camera, process it,
     and broadcast to all connected WebSocket clients at the configured
     stream FPS."""
     logger.info("Broadcast loop started")
@@ -39,14 +38,14 @@ async def broadcast_loop() -> None:
                 await asyncio.sleep(target_interval)
                 continue
 
-            tracker_payloads: list[dict] = []
+            camera_payloads: list[dict] = []
 
-            for tracker in registry.trackers.values():
-                frame = tracker.camera.get_frame()
+            for cam in registry.trackers.values():
+                frame = cam.camera.get_frame()
                 if frame is None:
                     continue
 
-                annotated, tracking = tracker.processor.process(frame)
+                annotated, tracking = cam.processor.process(frame)
 
                 encode_params = [cv2.IMWRITE_JPEG_QUALITY, settings.jpeg_quality]
                 ok, buf = cv2.imencode(".jpg", annotated, encode_params)
@@ -56,30 +55,24 @@ async def broadcast_loop() -> None:
                 b64_image = base64.b64encode(buf.tobytes()).decode("ascii")
 
                 payload = {
-                    "id": tracker.id,
-                    "cameraIndex": tracker.camera_index,
+                    "id": cam.id,
+                    "cameraIndex": cam.camera_index,
                     "image": b64_image,
                     "tracking": tracking,
                 }
-                tracker_payloads.append(payload)
+                camera_payloads.append(payload)
 
-                # Record if active
-                if recording.active:
-                    row = dict(tracking)
-                    row["tracker_id"] = tracker.id
-                    recording.rows.append(row)
-
-            if tracker_payloads:
+            if camera_payloads:
                 message = json.dumps(
                     {
                         "type": "frame",
-                        "trackers": tracker_payloads,
+                        "trackers": camera_payloads,
                     }
                 )
 
                 state.latest_tracking = {
                     "trackers": [
-                        {"id": p["id"], "tracking": p["tracking"]} for p in tracker_payloads
+                        {"id": p["id"], "tracking": p["tracking"]} for p in camera_payloads
                     ]
                 }
 

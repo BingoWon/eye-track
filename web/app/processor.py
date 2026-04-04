@@ -63,14 +63,14 @@ class FrameProcessor:
             thresh_strict, thresh_medium, thresh_relaxed, frame, gray_frame
         )
 
-        # Filter out blinks and outlier detections
-        ellipse, confidence = self._validate_detection(ellipse, confidence)
+        # Filter blinks and outliers
+        ellipse, confidence = self._validate(ellipse, confidence)
 
-        # Compute 2D eye center from ray intersections
-        model_center_average = self._compute_eye_center(frame, ellipse)
+        # Compute 2D eye center
+        eye_center = self._compute_eye_center(frame, ellipse)
 
         # Build tracking result and draw overlays
-        tracking = self._build_tracking(frame, ellipse, model_center_average, confidence)
+        tracking = self._build_tracking(frame, ellipse, eye_center, confidence)
 
         # Update FPS counter
         self._fps_count += 1
@@ -128,81 +128,84 @@ class FrameProcessor:
 
         return None, 0.0
 
-    def _validate_detection(
+    def _validate(
         self, ellipse: Optional[tuple], confidence: float
     ) -> tuple[Optional[tuple], float]:
-        """Reject low-confidence detections (blinks, occlusions, etc.)."""
+        """Reject blinks and out-of-range detections."""
         if ellipse is None:
             return None, 0.0
         if confidence < self.settings.min_confidence:
             return None, 0.0
+        # Aspect ratio: real pupils ≤2.0, blink slits >2.5
+        axes = ellipse[1]
+        minor, major = min(axes), max(axes)
+        if minor > 0 and major / minor > self.settings.max_aspect_ratio:
+            return None, 0.0
+        # Pupil bounds: absolute image-coordinate bounding circle
+        bounds = self.state.pupil_bounds
+        if bounds is not None:
+            px, py = float(ellipse[0][0]), float(ellipse[0][1])
+            if not bounds.contains(px, py):
+                return None, 0.0
         return ellipse, confidence
 
-    # Minimum angle difference (degrees) between two ellipses for a
-    # reliable intersection.  Larger = more stable but updates less often.
-    MIN_ANGLE_DIFF = 5.0
+    MIN_ANGLE_DIFF = 2.0
+    ALPHA_WARMUP = 0.05  # fast convergence for first 100 rays
+    ALPHA_STABLE = 0.0005  # near-frozen once converged
+    WARMUP_RAYS = 100  # switch to stable alpha after this many rays
 
     def _compute_eye_center(self, frame: np.ndarray, ellipse: Optional[tuple]) -> tuple[int, int]:
-        """Estimate the 2D eye center using EWMA over ray intersections.
+        """Estimate 2D eye center: 100-ray pool + best pair + adaptive EWMA.
 
-        Each valid ellipse defines a ray (along its minor-axis normal) that
-        should pass through the eye center.  When two rays from different
-        gaze angles intersect, the intersection is a noisy estimate of the
-        eye center.  We fuse these estimates with an exponential weighted
-        moving average so recent frames matter most.
+        Phase 1 (warmup): alpha=0.05, fast convergence (~1s)
+        Phase 2 (stable): alpha=0.0005, near-frozen (resists eye movement noise)
         """
         st = self.state
         h, w = frame.shape[:2]
-        default = (w // 2, h // 2)
 
-        if ellipse is None:
-            # No detection — return current estimate or default
-            if st.eye_center:
-                return (int(st.eye_center[0]), int(st.eye_center[1]))
-            return default
+        def current() -> tuple[int, int]:
+            return (int(st.eye_center_avg[0]), int(st.eye_center_avg[1]))
 
-        # Try to intersect with the previous valid ellipse
-        prev = st.prev_ellipse
-        st.prev_ellipse = ellipse
+        if ellipse is not None:
+            st.ray_lines.append(ellipse)
+            if len(st.ray_lines) > st.MAX_RAYS:
+                st.ray_lines = st.ray_lines[-st.MAX_RAYS :]
 
-        if prev is None:
-            if st.eye_center:
-                return (int(st.eye_center[0]), int(st.eye_center[1]))
-            return default
+        if ellipse is None or len(st.ray_lines) < 2:
+            return current()
 
-        # Check angle difference — need enough rotation for a good intersection
-        angle_diff = abs(ellipse[2] - prev[2])
-        if angle_diff < self.MIN_ANGLE_DIFF:
-            if st.eye_center:
-                return (int(st.eye_center[0]), int(st.eye_center[1]))
-            return default
+        # Find the ray with the largest angle difference from current
+        current_angle = ellipse[2]
+        best_ray = None
+        best_diff = 0.0
+        for ray in st.ray_lines[:-1]:
+            diff = abs(ray[2] - current_angle)
+            if diff > best_diff:
+                best_diff = diff
+                best_ray = ray
 
-        # Compute intersection of the two minor-axis normal rays
-        intersection = self._intersect_ellipse_normals(prev, ellipse)
-        if intersection is None:
-            if st.eye_center:
-                return (int(st.eye_center[0]), int(st.eye_center[1]))
-            return default
+        if best_ray is None or best_diff < self.MIN_ANGLE_DIFF:
+            return current()
 
-        ix, iy = intersection
+        ix = self._intersect_ellipse_normals(best_ray, ellipse)
+        if ix is None or not (0 <= ix[0] < w and 0 <= ix[1] < h):
+            return current()
 
-        # Reject if outside frame bounds
-        if not (0 <= ix < w and 0 <= iy < h):
-            if st.eye_center:
-                return (int(st.eye_center[0]), int(st.eye_center[1]))
-            return default
+        # Adaptive alpha: fast warmup → near-frozen stable
+        ray_count = len(st.ray_lines)
+        a = self.ALPHA_WARMUP if ray_count < self.WARMUP_RAYS else self.ALPHA_STABLE
 
-        # EWMA update
-        alpha = self.settings.eye_center_alpha
-        if st.eye_center is None:
-            st.eye_center = (float(ix), float(iy))
+        # EWMA update (float precision to avoid int truncation)
+        if st.eye_center_avg == (320.0, 240.0) and a >= self.ALPHA_WARMUP:
+            # First real update: jump directly to intersection
+            st.eye_center_avg = (float(ix[0]), float(ix[1]))
         else:
-            st.eye_center = (
-                alpha * ix + (1 - alpha) * st.eye_center[0],
-                alpha * iy + (1 - alpha) * st.eye_center[1],
+            st.eye_center_avg = (
+                a * ix[0] + (1 - a) * st.eye_center_avg[0],
+                a * ix[1] + (1 - a) * st.eye_center_avg[1],
             )
 
-        return (int(st.eye_center[0]), int(st.eye_center[1]))
+        return (int(st.eye_center_avg[0]), int(st.eye_center_avg[1]))
 
     @staticmethod
     def _intersect_ellipse_normals(e1: tuple, e2: tuple) -> Optional[tuple[float, float]]:
@@ -246,6 +249,23 @@ class FrameProcessor:
         cv2.circle(frame, eye_center, self.state.max_observed_distance, (255, 50, 50), 2)
         # Eye center dot (cyan)
         cv2.circle(frame, eye_center, 8, (255, 255, 0), -1)
+
+        # Pupil bounds ellipse (dashed green) — shows allowed pupil area
+        bounds = self.state.pupil_bounds
+        if bounds is not None:
+            segments = 60
+            for i in range(0, segments, 2):
+                a1 = 2 * np.pi * i / segments
+                a2 = 2 * np.pi * (i + 1) / segments
+                p1 = (
+                    int(bounds.cx + bounds.rx * np.cos(a1)),
+                    int(bounds.cy + bounds.ry * np.sin(a1)),
+                )
+                p2 = (
+                    int(bounds.cx + bounds.rx * np.cos(a2)),
+                    int(bounds.cy + bounds.ry * np.sin(a2)),
+                )
+                cv2.line(frame, p1, p2, (0, 255, 100), 1)
 
         if ellipse is None:
             return tracking

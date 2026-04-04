@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Crosshair, MoveHorizontal } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { playComplete, playError, playSuccess } from "../lib/audio";
 import {
 	type CalibrationPoint,
 	type CalibrationResult,
@@ -578,6 +579,7 @@ export function CalibrationWizard({
 				// Gaze deviated — immediate failure
 				setDotStatus("failed");
 				setWarningText("Gaze moved — hold Space to retry");
+				playError();
 				setSpaceHeld(false);
 				samplesRef.current = [];
 				setProgress(0);
@@ -603,6 +605,7 @@ export function CalibrationWizard({
 				setDotStatus("success");
 				setProgress(1);
 				setCompletedPoints((prev) => [...prev, currentPoint]);
+				playSuccess();
 
 				// Advance to next point
 				setTimeout(() => {
@@ -611,6 +614,7 @@ export function CalibrationWizard({
 						const result = computeCalibration(calibrationDataRef.current);
 						setCalibrationResult(result);
 						setStage("complete");
+						playComplete();
 					} else {
 						setCurrentPoint(nextPoint);
 						setProgress(0);
@@ -624,6 +628,7 @@ export function CalibrationWizard({
 				// Accumulated samples are unstable
 				setDotStatus("failed");
 				setWarningText("Unstable — hold Space to retry");
+				playError();
 				setSpaceHeld(false);
 				samplesRef.current = [];
 				setProgress(0);
@@ -666,8 +671,7 @@ export function CalibrationWizard({
 		<motion.div
 			className="fixed inset-0 z-50 flex items-center justify-center"
 			style={{
-				background:
-					"radial-gradient(ellipse at center, rgba(14,116,144,0.08) 0%, rgba(0,0,0,0.95) 70%)",
+				background: "rgba(0, 0, 0, 0.95)",
 			}}
 			initial={{ opacity: 0 }}
 			animate={{ opacity: 1 }}

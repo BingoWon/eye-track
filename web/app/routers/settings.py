@@ -9,7 +9,6 @@ from fastapi.responses import JSONResponse
 
 from web.app import state
 from web.app.state import (
-    recording,
     registry,
     settings,
     ws_clients,
@@ -28,7 +27,7 @@ SETTINGS_SCHEMA: dict[str, tuple[str, float, float, type]] = {
     "streamFps": ("stream_fps", 1, 120, int),
     "jpegQuality": ("jpeg_quality", 10, 100, int),
     "minConfidence": ("min_confidence", 0.0, 1.0, float),
-    "eyeCenterAlpha": ("eye_center_alpha", 0.005, 0.2, float),
+    "maxAspectRatio": ("max_aspect_ratio", 1.5, 5.0, float),
 }
 
 
@@ -49,6 +48,10 @@ async def update_settings(body: dict) -> JSONResponse:
         return JSONResponse({"error": "No valid settings provided"}, status_code=400)
 
     logger.info("Settings updated: %s", updated)
+    # Persist settings
+    from web.app.routers.cameras import _persist
+
+    _persist()
     return JSONResponse({"updated": updated})
 
 
@@ -82,8 +85,6 @@ async def get_status() -> JSONResponse:
             "trackers": trackers_info,
             "streamFps": settings.stream_fps,
             "connectedClients": len(ws_clients),
-            "recording": recording.active,
-            "recordingRows": len(recording.rows),
             "latestTracking": state.latest_tracking or None,
         }
     )

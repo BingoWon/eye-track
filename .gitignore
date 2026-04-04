@@ -3,6 +3,9 @@
 *.pyc
 __pycache__/
 
+# Eye tracker config (auto-generated)
+.eye-tracking-config.json
+
 # Eye tracker output
 gaze_vector.txt
 src/gaze_vector.txt
@@ -12,8 +15,9 @@ output_video.mp4
 web/frontend/node_modules/
 web/frontend/dist/
 
-# Claude
+# Private
 .claude/
+docs/
 
 # IDE
 .idea/

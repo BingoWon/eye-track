@@ -7,7 +7,9 @@ import {
 	MousePointer,
 	Pause,
 	Play,
+	RotateCcw,
 	Route,
+	ScanEye,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { CalibrationResult } from "../lib/calibration";
@@ -19,15 +21,19 @@ interface HeaderProps {
 	connectionStatus: ConnectionStatus;
 	viewMode: ViewMode;
 	onViewModeChange: (mode: ViewMode) => void;
-	fps: number;
-	clientFps: number;
 	calibration?: CalibrationResult | null;
 	showGazeCursor?: boolean;
 	paused?: boolean;
 	trackerCount?: number;
+	rangeCalibrated?: boolean;
 	onCalibrateClick?: () => void;
+	onClearCalibration?: () => void;
+	onRangeCalibrateClick?: () => void;
+	onClearRangeCalibration?: () => void;
 	onToggleGazeCursor?: () => void;
 	onTogglePause?: () => void;
+	onChangeCameraClick?: () => void;
+	onResetAll?: () => void;
 }
 
 const VIEW_TABS: {
@@ -39,12 +45,6 @@ const VIEW_TABS: {
 	{ mode: "heatmap", label: "Heatmap", icon: Flame },
 	{ mode: "trail", label: "Trail", icon: Route },
 ];
-
-function fpsColor(fps: number): string {
-	if (fps > 20) return "var(--color-success)";
-	if (fps > 10) return "var(--color-warning)";
-	return "var(--color-danger)";
-}
 
 function statusColor(status: ConnectionStatus): string {
 	switch (status) {
@@ -109,23 +109,6 @@ function HeaderButton({
 	);
 }
 
-function FpsBadge({ label, value }: { label: string; value: number }) {
-	return (
-		<div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[var(--color-bg-primary)]/40 border border-[var(--color-border)]/40 text-[11px] font-mono">
-			<span
-				className="w-1.5 h-1.5 rounded-full transition-colors duration-500"
-				style={{ backgroundColor: fpsColor(value) }}
-			/>
-			<span className="text-[var(--color-text-muted)] text-[10px] uppercase tracking-wider">
-				{label}
-			</span>
-			<span className="text-[var(--color-text-secondary)] font-semibold tabular-nums min-w-[18px] text-right">
-				{Math.round(value)}
-			</span>
-		</div>
-	);
-}
-
 function statusLabel(status: ConnectionStatus): string {
 	switch (status) {
 		case "connected":
@@ -143,15 +126,19 @@ export function Header({
 	connectionStatus,
 	viewMode,
 	onViewModeChange,
-	fps,
-	clientFps,
 	calibration,
 	showGazeCursor,
 	paused,
 	trackerCount,
+	rangeCalibrated,
 	onCalibrateClick,
+	onClearCalibration,
+	onRangeCalibrateClick,
+	onClearRangeCalibration,
 	onToggleGazeCursor,
 	onTogglePause,
+	onChangeCameraClick,
+	onResetAll,
 }: HeaderProps) {
 	const tabRefs = useRef<Map<ViewMode, HTMLButtonElement>>(new Map());
 	const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -196,10 +183,14 @@ export function Header({
 						Platform
 					</span>
 				</div>
-				{trackerCount != null && trackerCount > 0 && (
-					<span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20">
-						{trackerCount} {trackerCount === 1 ? "Tracker" : "Trackers"}
-					</span>
+				{trackerCount != null && trackerCount > 0 && onChangeCameraClick && (
+					<button
+						type="button"
+						onClick={onChangeCameraClick}
+						className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20 cursor-pointer hover:bg-[var(--color-accent)]/15 transition-colors"
+					>
+						{trackerCount} {trackerCount === 1 ? "Camera" : "Cameras"}
+					</button>
 				)}
 			</div>
 
@@ -251,15 +242,49 @@ export function Header({
 						inactiveColor="accent"
 					/>
 				)}
+				{onRangeCalibrateClick && (
+					<div className="relative group">
+						<HeaderButton
+							icon={ScanEye}
+							label={rangeCalibrated ? "Range ✓" : "Range"}
+							onClick={onRangeCalibrateClick}
+							active={!!rangeCalibrated}
+							activeColor="success"
+							inactiveColor="accent"
+						/>
+						{rangeCalibrated && onClearRangeCalibration && (
+							<button
+								type="button"
+								onClick={onClearRangeCalibration}
+								className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--color-danger)] text-white text-[8px] font-bold items-center justify-center cursor-pointer hidden group-hover:flex"
+								title="Clear range calibration"
+							>
+								×
+							</button>
+						)}
+					</div>
+				)}
 				{onCalibrateClick && (
-					<HeaderButton
-						icon={Crosshair}
-						label={calibration ? "Calibrated" : "Calibrate"}
-						onClick={onCalibrateClick}
-						active={!!calibration}
-						activeColor="success"
-						inactiveColor="accent"
-					/>
+					<div className="relative group">
+						<HeaderButton
+							icon={Crosshair}
+							label={calibration ? "Calibrated" : "Calibrate"}
+							onClick={onCalibrateClick}
+							active={!!calibration}
+							activeColor="success"
+							inactiveColor="accent"
+						/>
+						{calibration && onClearCalibration && (
+							<button
+								type="button"
+								onClick={onClearCalibration}
+								className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--color-danger)] text-white text-[8px] font-bold items-center justify-center cursor-pointer hidden group-hover:flex"
+								title="Clear gaze calibration"
+							>
+								×
+							</button>
+						)}
+					</div>
 				)}
 				{onToggleGazeCursor && (
 					<HeaderButton
@@ -273,36 +298,21 @@ export function Header({
 					/>
 				)}
 
-				{/* Divider */}
-				<div className="w-px h-5 bg-gradient-to-b from-transparent via-[var(--color-border-active)] to-transparent" />
+				{onResetAll && (
+					<HeaderButton
+						icon={RotateCcw}
+						label="Reset"
+						onClick={onResetAll}
+						inactiveColor="accent"
+					/>
+				)}
 
-				{/* FPS badges */}
-				<FpsBadge label="Srv" value={fps} />
-				<FpsBadge label="Cli" value={clientFps} />
-
-				{/* Connection status */}
-				<div className="flex items-center gap-2 text-[11px]">
-					<span className="relative flex h-2 w-2">
-						{connectionStatus === "connected" && (
-							<span
-								className="absolute inline-flex h-full w-full rounded-full animate-pulse-glow"
-								style={{
-									backgroundColor: statusColor(connectionStatus),
-								}}
-							/>
-						)}
-						<span
-							className="relative inline-flex rounded-full h-2 w-2 shadow-[0_0_6px_currentColor]"
-							style={{
-								backgroundColor: statusColor(connectionStatus),
-								color: statusColor(connectionStatus),
-							}}
-						/>
-					</span>
-					<span className="text-[var(--color-text-secondary)] font-medium tracking-wide">
-						{statusLabel(connectionStatus)}
-					</span>
-				</div>
+				{/* Connection dot */}
+				<span
+					className="w-2 h-2 rounded-full"
+					style={{ backgroundColor: statusColor(connectionStatus) }}
+					title={statusLabel(connectionStatus)}
+				/>
 			</div>
 		</header>
 	);

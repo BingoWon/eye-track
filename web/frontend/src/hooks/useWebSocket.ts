@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ServerMessage, TrackerFrame } from "../types/tracking";
+import type { FrameMessage, TrackerFrame } from "../types/tracking";
 
 interface UseWebSocketOptions {
 	url: string;
@@ -32,9 +32,10 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 
 		ws.onmessage = (event) => {
 			try {
-				const msg: ServerMessage = JSON.parse(event.data);
+				const msg = JSON.parse(event.data);
 				if (msg.type === "frame") {
-					onFrameRef.current?.(msg.trackers);
+					const frameMsg = msg as FrameMessage;
+					onFrameRef.current?.(frameMsg.trackers);
 				} else if (msg.type === "status") {
 					onStatusRef.current?.(msg);
 				}

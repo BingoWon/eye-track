@@ -3,7 +3,7 @@ import { Camera, ChevronRight, Loader2, RefreshCw, Wifi } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface CameraSelectorProps {
-	onSelect: (trackerIds: string[]) => void;
+	onSelect: (cameraIds: string[]) => void;
 }
 
 interface CameraInfo {
@@ -131,7 +131,7 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 				});
 				if (res.ok) {
 					const data = await res.json();
-					trackerIds.push(data.id ?? `tracker-${idx}`);
+					trackerIds.push(data.id ?? `camera-${idx}`);
 				}
 			}
 			if (trackerIds.length > 0) {
@@ -146,7 +146,7 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 
 	const selectedCount = selectedIndices.size;
 	const buttonLabel =
-		selectedCount === 1 ? "Start Tracking" : `Start with ${selectedCount} Trackers`;
+		selectedCount === 1 ? "Start Tracking" : `Start with ${selectedCount} Cameras`;
 
 	return (
 		<div className="h-screen flex flex-col items-center justify-center bg-[var(--color-bg-primary)] relative overflow-hidden">

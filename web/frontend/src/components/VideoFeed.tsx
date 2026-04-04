@@ -1,20 +1,35 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, Maximize2, Minimize2, Video } from "lucide-react";
-import { useRef } from "react";
+import { Camera, ImageDown, Video } from "lucide-react";
+import { useCallback, useRef } from "react";
 import type { TrackingData } from "../types/tracking";
 
 interface VideoFeedProps {
 	image: string;
 	tracking: TrackingData | null;
-	isExpanded: boolean;
-	onToggleExpand: () => void;
 }
 
-export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: VideoFeedProps) {
+export function VideoFeed({ image, tracking }: VideoFeedProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
+	const imgRef = useRef<HTMLImageElement>(null);
 
 	const isActive = tracking !== null && tracking.pupil !== null;
 	const isRejected = tracking !== null && tracking.pupil === null && tracking.confidence > 0;
+
+	const copyScreenshot = useCallback(() => {
+		const img = imgRef.current;
+		if (!img) return;
+		const canvas = document.createElement("canvas");
+		canvas.width = img.naturalWidth;
+		canvas.height = img.naturalHeight;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		ctx.drawImage(img, 0, 0);
+		canvas.toBlob((blob) => {
+			if (blob) {
+				navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]).catch(() => {});
+			}
+		});
+	}, []);
 
 	return (
 		<motion.div
@@ -37,17 +52,6 @@ export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: Video
 						Live Feed
 					</span>
 				</div>
-				<button
-					type="button"
-					onClick={onToggleExpand}
-					className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-card-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-all cursor-pointer"
-				>
-					{isExpanded ? (
-						<Minimize2 className="w-3.5 h-3.5" />
-					) : (
-						<Maximize2 className="w-3.5 h-3.5" />
-					)}
-				</button>
 			</div>
 
 			{/* Video area */}
@@ -63,12 +67,22 @@ export function VideoFeed({ image, tracking, isExpanded, onToggleExpand }: Video
 							className="absolute inset-0 flex items-center justify-center"
 						>
 							<img
+								ref={imgRef}
 								src={`data:image/jpeg;base64,${image}`}
 								alt="Camera feed"
 								className="w-full h-full object-contain rounded-sm transition-all duration-150"
 								style={isRejected ? { filter: "saturate(0) brightness(0.6)" } : undefined}
 								draggable={false}
 							/>
+							{/* Screenshot button */}
+							<button
+								type="button"
+								onClick={copyScreenshot}
+								className="absolute bottom-2 right-2 w-7 h-7 rounded-lg flex items-center justify-center bg-black/40 hover:bg-black/60 text-white/60 hover:text-white transition-all cursor-pointer"
+								title="Screenshot to clipboard"
+							>
+								<ImageDown className="w-3.5 h-3.5" />
+							</button>
 						</motion.div>
 					) : (
 						<motion.div

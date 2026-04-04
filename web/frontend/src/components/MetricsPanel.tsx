@@ -5,8 +5,6 @@ import {
 	Crosshair,
 	Eye,
 	MapPin,
-	Maximize2,
-	Minimize2,
 	Navigation,
 	RotateCw,
 	Shield,
@@ -18,8 +16,6 @@ import type { TrackingData, TrackingHistory } from "../types/tracking";
 interface MetricsPanelProps {
 	tracking: TrackingData | null;
 	history: TrackingHistory;
-	isExpanded: boolean;
-	onToggleExpand: () => void;
 }
 
 function fpsColor(fps: number): string {
@@ -134,7 +130,7 @@ function Sparkline({ data, globalMax }: { data: number[]; globalMax: number }) {
 
 /* ---- Main panel ---- */
 
-export function MetricsPanel({ tracking, history, isExpanded, onToggleExpand }: MetricsPanelProps) {
+export function MetricsPanel({ tracking, history }: MetricsPanelProps) {
 	const fps = tracking?.fps ?? 0;
 	const confidence = tracking?.confidence ?? 0;
 	const pupilSize = tracking?.pupil ? (tracking.pupil.axes[0] + tracking.pupil.axes[1]) / 2 : null;
@@ -160,17 +156,6 @@ export function MetricsPanel({ tracking, history, isExpanded, onToggleExpand }: 
 						Metrics
 					</h2>
 				</div>
-				<button
-					type="button"
-					onClick={onToggleExpand}
-					className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer"
-				>
-					{isExpanded ? (
-						<Minimize2 className="w-3.5 h-3.5" />
-					) : (
-						<Maximize2 className="w-3.5 h-3.5" />
-					)}
-				</button>
 			</div>
 
 			{/* Content */}
