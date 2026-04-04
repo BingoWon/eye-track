@@ -9,16 +9,16 @@ All algorithmic logic is preserved. Supports macOS (AVFoundation),
 Windows (DirectShow), and Linux (V4L2) via automatic backend selection.
 """
 
+import os
+import platform
+
 import cv2
 import numpy as np
-import random
-import math
-import os
-import sys
-import platform
+
 try:
     import tkinter as tk
     from tkinter import filedialog
+
     TK_AVAILABLE = True
 except ImportError:
     TK_AVAILABLE = False
@@ -27,6 +27,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Image pre-processing
 # ---------------------------------------------------------------------------
+
 
 def crop_to_aspect_ratio(image, width=640, height=480):
     """Crop the image to maintain a specific aspect ratio before resizing."""
@@ -37,18 +38,18 @@ def crop_to_aspect_ratio(image, width=640, height=480):
     if current_ratio > desired_ratio:
         new_width = int(desired_ratio * current_height)
         offset = (current_width - new_width) // 2
-        cropped_img = image[:, offset:offset + new_width]
+        cropped_img = image[:, offset : offset + new_width]
     else:
         new_height = int(current_width / desired_ratio)
         offset = (current_height - new_height) // 2
-        cropped_img = image[offset:offset + new_height, :]
+        cropped_img = image[offset : offset + new_height, :]
 
     return cv2.resize(cropped_img, (width, height))
 
 
 def apply_binary_threshold(image, darkest_pixel_value, added_threshold):
     """Apply inverse binary thresholding."""
-    threshold = darkest_pixel_value + added_threshold
+    threshold = int(darkest_pixel_value) + added_threshold
     _, thresholded_image = cv2.threshold(image, threshold, 255, cv2.THRESH_BINARY_INV)
     return thresholded_image
 
@@ -56,6 +57,7 @@ def apply_binary_threshold(image, darkest_pixel_value, added_threshold):
 # ---------------------------------------------------------------------------
 # Darkest region search
 # ---------------------------------------------------------------------------
+
 
 def get_darkest_area(image):
     """
@@ -69,7 +71,7 @@ def get_darkest_area(image):
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    min_sum = float('inf')
+    min_sum = float("inf")
     darkest_point = (gray.shape[1] // 2, gray.shape[0] // 2)  # safe default
 
     for y in range(ignore_bounds, gray.shape[0] - ignore_bounds, image_skip_size):
@@ -96,6 +98,7 @@ def get_darkest_area(image):
 # Masking
 # ---------------------------------------------------------------------------
 
+
 def mask_outside_square(image, center, size):
     """Mask all pixels outside a square defined by center and size."""
     x, y = center
@@ -115,6 +118,7 @@ def mask_outside_square(image, center, size):
 # Contour filtering
 # ---------------------------------------------------------------------------
 
+
 def optimize_contours_by_angle(contours, image):
     """
     Refine contour points by keeping only those whose local curvature
@@ -132,12 +136,14 @@ def optimize_contours_by_angle(contours, image):
     for i in range(len(all_contours)):
         current_point = all_contours[i]
         prev_point = all_contours[i - spacing] if i - spacing >= 0 else all_contours[-spacing]
-        next_point = all_contours[i + spacing] if i + spacing < len(all_contours) else all_contours[spacing]
+        next_point = (
+            all_contours[i + spacing] if i + spacing < len(all_contours) else all_contours[spacing]
+        )
 
         vec1 = prev_point - current_point
         vec2 = next_point - current_point
 
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid="ignore"):
             norm_product = np.linalg.norm(vec1) * np.linalg.norm(vec2)
             if norm_product < 1e-8:
                 continue
@@ -179,6 +185,7 @@ def filter_contours_by_area_and_return_largest(contours, pixel_thresh, ratio_thr
 # Ellipse quality assessment
 # ---------------------------------------------------------------------------
 
+
 def check_contour_pixels(contour, image_shape, debug_mode_on):
     """
     Check how many contour pixels fall near a fitted ellipse.
@@ -202,8 +209,9 @@ def check_contour_pixels(contour, image_shape, debug_mode_on):
 
     absolute_pixel_total_thick = np.sum(overlap_thick > 0)
     total_border_pixels = np.sum(contour_mask > 0)
-    ratio_under_ellipse = (np.sum(overlap_thin > 0) / total_border_pixels
-                           if total_border_pixels > 0 else 0)
+    ratio_under_ellipse = (
+        np.sum(overlap_thin > 0) / total_border_pixels if total_border_pixels > 0 else 0
+    )
 
     return [absolute_pixel_total_thick, ratio_under_ellipse, overlap_thin]
 
@@ -239,9 +247,17 @@ def check_ellipse_goodness(binary_image, contour, debug_mode_on):
 # Core frame processing (cascaded thresholding pipeline)
 # ---------------------------------------------------------------------------
 
-def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
-                   frame, gray_frame, darkest_point,
-                   debug_mode_on, render_cv_window):
+
+def process_frames(
+    thresh_strict,
+    thresh_medium,
+    thresh_relaxed,
+    frame,
+    gray_frame,
+    darkest_point,
+    debug_mode_on,
+    render_cv_window,
+):
     """
     Process three threshold levels, pick the best ellipse fit,
     refine via angle-based contour optimization, and return the
@@ -273,7 +289,9 @@ def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
             total_pixels = check_contour_pixels(reduced[0], dilated.shape, debug_mode_on)
             cv2.ellipse(gray_copies[i], ellipse, (255, 0, 0), 2)
 
-            final_goodness = current_goodness[0] * total_pixels[0] * total_pixels[0] * total_pixels[1]
+            final_goodness = (
+                current_goodness[0] * total_pixels[0] * total_pixels[0] * total_pixels[1]
+            )
 
             if final_goodness > 0 and final_goodness > goodness:
                 goodness = final_goodness
@@ -286,23 +304,36 @@ def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
     test_frame = frame.copy()
     final_contours = [optimize_contours_by_angle(final_contours, gray_frame)]
 
-    if (final_contours
-            and not isinstance(final_contours[0], list)
-            and len(final_contours[0]) > 5):
+    if final_contours and not isinstance(final_contours[0], list) and len(final_contours[0]) > 5:
         ellipse = cv2.fitEllipse(final_contours[0])
         final_rotated_rect = ellipse
         cv2.ellipse(test_frame, ellipse, (55, 255, 0), 2)
         center_x, center_y = map(int, ellipse[0])
         cv2.circle(test_frame, (center_x, center_y), 3, (255, 255, 0), -1)
-        cv2.putText(test_frame, "SPACE = play/pause", (10, 410),
-                    cv2.FONT_HERSHEY_SIMPLEX, .55, (255, 90, 30), 2)
-        cv2.putText(test_frame, "Q     = quit", (10, 430),
-                    cv2.FONT_HERSHEY_SIMPLEX, .55, (255, 90, 30), 2)
-        cv2.putText(test_frame, "D     = show debug", (10, 450),
-                    cv2.FONT_HERSHEY_SIMPLEX, .55, (255, 90, 30), 2)
+        cv2.putText(
+            test_frame,
+            "SPACE = play/pause",
+            (10, 410),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            (255, 90, 30),
+            2,
+        )
+        cv2.putText(
+            test_frame, "Q     = quit", (10, 430), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 90, 30), 2
+        )
+        cv2.putText(
+            test_frame,
+            "D     = show debug",
+            (10, 450),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            (255, 90, 30),
+            2,
+        )
 
     if render_cv_window:
-        cv2.imshow('Pupil Detection', test_frame)
+        cv2.imshow("Pupil Detection", test_frame)
 
     if len(final_contours[0]) >= 5:
         contour = np.array(final_contours[0], dtype=np.int32).reshape((-1, 1, 2))
@@ -315,6 +346,7 @@ def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
 # ---------------------------------------------------------------------------
 # Single-frame API
 # ---------------------------------------------------------------------------
+
 
 def process_frame(frame):
     """Find the pupil in a single frame and return the ellipse RotatedRect."""
@@ -332,13 +364,15 @@ def process_frame(frame):
     thresh_relaxed = apply_binary_threshold(gray_frame, darkest_pixel_value, 25)
     thresh_relaxed = mask_outside_square(thresh_relaxed, darkest_point, 250)
 
-    return process_frames(thresh_strict, thresh_medium, thresh_relaxed,
-                          frame, gray_frame, darkest_point, False, False)
+    return process_frames(
+        thresh_strict, thresh_medium, thresh_relaxed, frame, gray_frame, darkest_point, False, False
+    )
 
 
 # ---------------------------------------------------------------------------
 # Video / camera processing
 # ---------------------------------------------------------------------------
+
 
 def _get_capture_backend():
     """Return the appropriate OpenCV capture backend for the current OS."""
@@ -357,7 +391,7 @@ def process_video(video_path, input_method):
     and run pupil detection on each frame.
     """
     output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output_video.mp4")
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, 30.0, (640, 480))
 
     if input_method == 1:
@@ -388,7 +422,7 @@ def process_video(video_path, input_method):
         if debug_mode_on:
             darkest_image = frame.copy()
             cv2.circle(darkest_image, darkest_point, 10, (0, 0, 255), -1)
-            cv2.imshow('Darkest image patch', darkest_image)
+            cv2.imshow("Darkest image patch", darkest_image)
 
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         darkest_pixel_value = gray_frame[darkest_point[1], darkest_point[0]]
@@ -400,20 +434,28 @@ def process_video(video_path, input_method):
         thresh_relaxed = apply_binary_threshold(gray_frame, darkest_pixel_value, 25)
         thresh_relaxed = mask_outside_square(thresh_relaxed, darkest_point, 250)
 
-        process_frames(thresh_strict, thresh_medium, thresh_relaxed,
-                       frame, gray_frame, darkest_point, debug_mode_on, True)
+        process_frames(
+            thresh_strict,
+            thresh_medium,
+            thresh_relaxed,
+            frame,
+            gray_frame,
+            darkest_point,
+            debug_mode_on,
+            True,
+        )
 
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('d'):
+        if key == ord("d"):
             debug_mode_on = not debug_mode_on
             if not debug_mode_on:
                 cv2.destroyAllWindows()
-        elif key == ord('q'):
+        elif key == ord("q"):
             break
-        elif key == ord(' '):
+        elif key == ord(" "):
             while True:
                 key = cv2.waitKey(1) & 0xFF
-                if key in (ord(' '), ord('q')):
+                if key in (ord(" "), ord("q")):
                     break
 
     cap.release()
@@ -424,6 +466,7 @@ def process_video(video_path, input_method):
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def select_video():
     """
@@ -442,8 +485,7 @@ def select_video():
         root = tk.Tk()
         root.withdraw()
         video_path = filedialog.askopenfilename(
-            title="Select Video File",
-            filetypes=[("Video Files", "*.mp4;*.avi")]
+            title="Select Video File", filetypes=[("Video Files", "*.mp4;*.avi")]
         )
         if video_path:
             process_video(video_path, 1)

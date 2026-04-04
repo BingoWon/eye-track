@@ -10,13 +10,15 @@ PyOpenGL still functions via the compatibility profile.
 """
 
 import sys
+
 import numpy as np
 
 try:
-    from PyQt5.QtWidgets import QApplication, QMainWindow, QOpenGLWidget
-    from PyQt5.QtCore import Qt, QTimer
     from OpenGL.GL import *
     from OpenGL.GLU import *
+    from PyQt5.QtCore import Qt, QTimer
+    from PyQt5.QtWidgets import QApplication, QMainWindow, QOpenGLWidget
+
     OPENGL_AVAILABLE = True
 except ImportError:
     OPENGL_AVAILABLE = False
@@ -30,6 +32,7 @@ CV_pupil_y = 0
 
 
 if OPENGL_AVAILABLE:
+
     class SphereWidget(QOpenGLWidget):
         def __init__(self):
             super().__init__()
@@ -325,13 +328,15 @@ def update_sphere_rotation(x, y, center_x, center_y, screen_width=640, screen_he
     t_ = 1 - cos_a
     x_, y_, z_ = rotation_axis
 
-    rotation_matrix = np.array([
-        [t_ * x_ * x_ + cos_a,     t_ * x_ * y_ - sin_a * z_, t_ * x_ * z_ + sin_a * y_],
-        [t_ * x_ * y_ + sin_a * z_, t_ * y_ * y_ + cos_a,     t_ * y_ * z_ - sin_a * x_],
-        [t_ * x_ * z_ - sin_a * y_, t_ * y_ * z_ + sin_a * x_, t_ * z_ * z_ + cos_a]
-    ])
+    rotation_matrix = np.array(
+        [
+            [t_ * x_ * x_ + cos_a, t_ * x_ * y_ - sin_a * z_, t_ * x_ * z_ + sin_a * y_],
+            [t_ * x_ * y_ + sin_a * z_, t_ * y_ * y_ + cos_a, t_ * y_ * z_ - sin_a * x_],
+            [t_ * x_ * z_ - sin_a * y_, t_ * y_ * z_ + sin_a * x_, t_ * z_ * z_ + cos_a],
+        ]
+    )
 
-    sy = np.sqrt(rotation_matrix[0, 0]**2 + rotation_matrix[1, 0]**2)
+    sy = np.sqrt(rotation_matrix[0, 0] ** 2 + rotation_matrix[1, 0] ** 2)
     if sy < 1e-6:
         x_rot = np.arctan2(-rotation_matrix[1, 2], rotation_matrix[1, 1])
         y_rot = np.arctan2(-rotation_matrix[2, 0], sy)

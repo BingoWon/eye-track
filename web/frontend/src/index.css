@@ -1,0 +1,231 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+	--color-bg-primary: #06080f;
+	--color-bg-card: #0d1117;
+	--color-bg-card-hover: #161b22;
+	--color-border: #21262d;
+	--color-border-active: #30363d;
+	--color-accent: #22d3ee;
+	--color-accent-dim: #0e7490;
+	--color-success: #34d399;
+	--color-warning: #fbbf24;
+	--color-danger: #f87171;
+	--color-text-primary: #e6edf3;
+	--color-text-secondary: #8b949e;
+	--color-text-muted: #484f58;
+	--color-glow-cyan: color-mix(in srgb, #22d3ee 15%, transparent);
+	--color-glow-green: color-mix(in srgb, #34d399 15%, transparent);
+}
+
+/* -------------------------------------------------------- */
+/*  Base                                                    */
+/* -------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+	background-color: var(--color-bg-primary);
+	color: var(--color-text-primary);
+	font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	overflow: hidden;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+}
+
+/* -------------------------------------------------------- */
+/*  Scrollbar                                               */
+/* -------------------------------------------------------- */
+
+::-webkit-scrollbar {
+	width: 5px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-border);
+	border-radius: 9999px;
+	transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-border-active);
+}
+
+/* Firefox */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-border) transparent;
+}
+
+/* -------------------------------------------------------- */
+/*  Focus rings (accessibility)                             */
+/* -------------------------------------------------------- */
+
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+/* -------------------------------------------------------- */
+/*  Glass effect utility                                    */
+/* -------------------------------------------------------- */
+
+.glass {
+	background: rgba(13, 17, 23, 0.75);
+	backdrop-filter: blur(16px) saturate(1.2);
+	-webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.glass-heavy {
+	background: rgba(13, 17, 23, 0.88);
+	backdrop-filter: blur(24px) saturate(1.3);
+	-webkit-backdrop-filter: blur(24px) saturate(1.3);
+}
+
+.glass-frosted {
+	background: rgba(13, 17, 23, 0.6);
+	backdrop-filter: blur(20px) saturate(1.4);
+	-webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+/* -------------------------------------------------------- */
+/*  Glow utilities                                          */
+/* -------------------------------------------------------- */
+
+.glow-cyan {
+	box-shadow: 0 0 15px rgba(34, 211, 238, 0.08), 0 0 40px rgba(34, 211, 238, 0.04);
+}
+
+.glow-cyan-strong {
+	box-shadow: 0 0 20px rgba(34, 211, 238, 0.12), 0 0 60px rgba(34, 211, 238, 0.06);
+}
+
+.glow-success {
+	box-shadow: 0 0 15px rgba(52, 211, 153, 0.08), 0 0 40px rgba(52, 211, 153, 0.04);
+}
+
+/* -------------------------------------------------------- */
+/*  Custom Animations                                       */
+/* -------------------------------------------------------- */
+
+@keyframes pulse-glow {
+	0%,
+	100% {
+		opacity: 0.4;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.8;
+		transform: scale(1.6);
+	}
+}
+
+@keyframes float {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-6px);
+	}
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: -200% 0;
+	}
+	100% {
+		background-position: 200% 0;
+	}
+}
+
+@keyframes subtle-pulse {
+	0%,
+	100% {
+		opacity: 0.5;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+@keyframes fade-in-up {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.animate-pulse-glow {
+	animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+	animation: float 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+	background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.04) 50%, transparent 100%);
+	background-size: 200% 100%;
+	animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-subtle-pulse {
+	animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+	animation: fade-in-up 0.4s ease-out;
+}
+
+/* -------------------------------------------------------- */
+/*  Gradient border utility                                 */
+/* -------------------------------------------------------- */
+
+.border-gradient-b {
+	border-image: linear-gradient(to right, transparent, var(--color-border-active), transparent) 1;
+}
+
+/* -------------------------------------------------------- */
+/*  Smooth transitions for interactive elements             */
+/* -------------------------------------------------------- */
+
+button,
+a,
+input,
+[role="button"] {
+	transition:
+		color 0.2s ease,
+		background-color 0.2s ease,
+		border-color 0.2s ease,
+		box-shadow 0.2s ease,
+		transform 0.15s ease,
+		opacity 0.2s ease;
+}
+
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled) {
+	transform: scale(0.97);
+}

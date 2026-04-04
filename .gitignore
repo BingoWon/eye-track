@@ -1,5 +1,20 @@
+# Python
 .venv/
 *.pyc
 __pycache__/
+
+# Eye tracker output
 gaze_vector.txt
+src/gaze_vector.txt
 output_video.mp4
+
+# Frontend
+web/frontend/node_modules/
+web/frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store

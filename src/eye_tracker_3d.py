@@ -10,17 +10,17 @@ All algorithmic logic is preserved. Supports macOS, Windows, and Linux
 via automatic capture backend selection.
 """
 
-import cv2
-import random
-import math
-import numpy as np
 import os
 import platform
-import sys
-import time
+import random
+
+import cv2
+import numpy as np
+
 try:
     import tkinter as tk
-    from tkinter import ttk, filedialog
+    from tkinter import filedialog, ttk
+
     TK_AVAILABLE = True
 except ImportError:
     TK_AVAILABLE = False
@@ -28,10 +28,12 @@ except ImportError:
 # Import our adapted modules
 try:
     from src import gl_sphere
+
     GL_SPHERE_AVAILABLE = gl_sphere.OPENGL_AVAILABLE
 except ImportError:
     try:
         import gl_sphere
+
         GL_SPHERE_AVAILABLE = gl_sphere.OPENGL_AVAILABLE
     except ImportError:
         GL_SPHERE_AVAILABLE = False
@@ -40,23 +42,34 @@ except ImportError:
 # Import pupil detection primitives from our adapted detector
 try:
     from src.pupil_detector import (
-        crop_to_aspect_ratio, apply_binary_threshold, get_darkest_area,
-        mask_outside_square, optimize_contours_by_angle,
-        filter_contours_by_area_and_return_largest, check_contour_pixels,
-        check_ellipse_goodness, _get_capture_backend,
+        _get_capture_backend,
+        apply_binary_threshold,
+        check_contour_pixels,
+        check_ellipse_goodness,
+        crop_to_aspect_ratio,
+        filter_contours_by_area_and_return_largest,
+        get_darkest_area,
+        mask_outside_square,
+        optimize_contours_by_angle,
     )
 except ImportError:
     from pupil_detector import (
-        crop_to_aspect_ratio, apply_binary_threshold, get_darkest_area,
-        mask_outside_square, optimize_contours_by_angle,
-        filter_contours_by_area_and_return_largest, check_contour_pixels,
-        check_ellipse_goodness, _get_capture_backend,
+        _get_capture_backend,
+        apply_binary_threshold,
+        check_contour_pixels,
+        check_ellipse_goodness,
+        crop_to_aspect_ratio,
+        filter_contours_by_area_and_return_largest,
+        get_darkest_area,
+        mask_outside_square,
+        optimize_contours_by_angle,
     )
 
 
 # ---------------------------------------------------------------------------
 # Global state
 # ---------------------------------------------------------------------------
+selected_camera = None
 ray_lines = []
 model_centers = []
 max_rays = 100
@@ -68,6 +81,7 @@ stored_intersections = []
 # ---------------------------------------------------------------------------
 # Camera detection (cross-platform)
 # ---------------------------------------------------------------------------
+
 
 def detect_cameras(max_cams=10):
     """Detect available cameras using the appropriate backend."""
@@ -84,6 +98,7 @@ def detect_cameras(max_cams=10):
 # ---------------------------------------------------------------------------
 # Running average utilities
 # ---------------------------------------------------------------------------
+
 
 def update_and_average_point(point_list, new_point, N):
     """
@@ -104,6 +119,7 @@ def update_and_average_point(point_list, new_point, N):
 # Ray geometry utilities
 # ---------------------------------------------------------------------------
 
+
 def draw_orthogonal_ray(image, ellipse, length=100, color=(0, 255, 0), thickness=1):
     """Draw a ray orthogonal to the ellipse's minor axis through its center."""
     (cx, cy), (major_axis, minor_axis), angle = ellipse
@@ -111,10 +127,14 @@ def draw_orthogonal_ray(image, ellipse, length=100, color=(0, 255, 0), thickness
     normal_dx = (minor_axis / 2) * np.cos(angle_rad)
     normal_dy = (minor_axis / 2) * np.sin(angle_rad)
 
-    pt1 = (int(cx - length * normal_dx / (minor_axis / 2)),
-            int(cy - length * normal_dy / (minor_axis / 2)))
-    pt2 = (int(cx + length * normal_dx / (minor_axis / 2)),
-            int(cy + length * normal_dy / (minor_axis / 2)))
+    pt1 = (
+        int(cx - length * normal_dx / (minor_axis / 2)),
+        int(cy - length * normal_dy / (minor_axis / 2)),
+    )
+    pt2 = (
+        int(cx + length * normal_dx / (minor_axis / 2)),
+        int(cy + length * normal_dy / (minor_axis / 2)),
+    )
 
     cv2.line(image, pt1, pt2, color, thickness)
     return image
@@ -177,9 +197,7 @@ def compute_average_intersection(frame, ray_lines_list, N, M, spacing):
 
         if abs(angle1 - angle2) >= 2:
             intersection = find_line_intersection(line1, line2)
-            if (intersection
-                    and 0 <= intersection[0] < width
-                    and 0 <= intersection[1] < height):
+            if intersection and 0 <= intersection[0] < width and 0 <= intersection[1] < height:
                 intersections.append(intersection)
                 stored_intersections.append(intersection)
 
@@ -199,8 +217,8 @@ def compute_average_intersection(frame, ray_lines_list, N, M, spacing):
 # 3D gaze vector computation
 # ---------------------------------------------------------------------------
 
-def compute_gaze_vector(x, y, center_x, center_y,
-                        screen_width=640, screen_height=480):
+
+def compute_gaze_vector(x, y, center_x, center_y, screen_width=640, screen_height=480):
     """
     Compute 3D gaze direction from 2D pupil center and 2D eye center
     screen coordinates using a spherical eye model.
@@ -304,11 +322,13 @@ def compute_gaze_vector(x, y, center_x, center_y,
     t_ = 1 - cos_a
     x_, y_, z_ = rotation_axis
 
-    rotation_matrix = np.array([
-        [t_ * x_ * x_ + cos_a,      t_ * x_ * y_ - sin_a * z_, t_ * x_ * z_ + sin_a * y_],
-        [t_ * x_ * y_ + sin_a * z_, t_ * y_ * y_ + cos_a,      t_ * y_ * z_ - sin_a * x_],
-        [t_ * x_ * z_ - sin_a * y_, t_ * y_ * z_ + sin_a * x_, t_ * z_ * z_ + cos_a]
-    ])
+    rotation_matrix = np.array(
+        [
+            [t_ * x_ * x_ + cos_a, t_ * x_ * y_ - sin_a * z_, t_ * x_ * z_ + sin_a * y_],
+            [t_ * x_ * y_ + sin_a * z_, t_ * y_ * y_ + cos_a, t_ * y_ * z_ - sin_a * x_],
+            [t_ * x_ * z_ - sin_a * y_, t_ * y_ * z_ + sin_a * x_, t_ * z_ * z_ + cos_a],
+        ]
+    )
 
     gaze_local = np.array([0.0, 0.0, inner_radius])
     gaze_rotated = rotation_matrix @ gaze_local
@@ -331,9 +351,17 @@ def compute_gaze_vector(x, y, center_x, center_y,
 # Core 3D frame processing
 # ---------------------------------------------------------------------------
 
-def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
-                   frame, gray_frame, darkest_point,
-                   debug_mode_on, render_cv_window):
+
+def process_frames(
+    thresh_strict,
+    thresh_medium,
+    thresh_relaxed,
+    frame,
+    gray_frame,
+    darkest_point,
+    debug_mode_on,
+    render_cv_window,
+):
     """
     Process three threshold levels for the best pupil ellipse,
     compute the 3D eye center and gaze direction.
@@ -369,7 +397,9 @@ def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
             total_pixels = check_contour_pixels(reduced[0], dilated.shape, debug_mode_on)
             cv2.ellipse(gray_copies[i], ellipse, (255, 0, 0), 2)
 
-            final_goodness = current_goodness[0] * total_pixels[0] * total_pixels[0] * total_pixels[1]
+            final_goodness = (
+                current_goodness[0] * total_pixels[0] * total_pixels[0] * total_pixels[1]
+            )
 
         if final_goodness > 0 and final_goodness > goodness:
             goodness = final_goodness
@@ -379,9 +409,7 @@ def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
     final_contours = [optimize_contours_by_angle(final_contours, gray_frame)]
     final_rotated_rect = None
 
-    if (final_contours
-            and not isinstance(final_contours[0], list)
-            and len(final_contours[0]) > 5):
+    if final_contours and not isinstance(final_contours[0], list) and len(final_contours[0]) > 5:
         ellipse = cv2.fitEllipse(final_contours[0])
         final_rotated_rect = ellipse
 
@@ -422,19 +450,19 @@ def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
     # OpenGL sphere visualization
     if GL_SPHERE_AVAILABLE:
         gl_image = gl_sphere.update_sphere_rotation(
-            center_x, center_y,
-            model_center_average[0], model_center_average[1]
+            center_x, center_y, model_center_average[0], model_center_average[1]
         )
 
     # Compute and display 3D gaze vector
     center_3d, direction_3d = compute_gaze_vector(
-        center_x, center_y,
-        model_center_average[0], model_center_average[1]
+        center_x, center_y, model_center_average[0], model_center_average[1]
     )
 
     if center_3d is not None and direction_3d is not None:
         origin_text = f"Origin: ({center_3d[0]:.2f}, {center_3d[1]:.2f}, {center_3d[2]:.2f})"
-        dir_text = f"Direction: ({direction_3d[0]:.2f}, {direction_3d[1]:.2f}, {direction_3d[2]:.2f})"
+        dir_text = (
+            f"Direction: ({direction_3d[0]:.2f}, {direction_3d[1]:.2f}, {direction_3d[2]:.2f})"
+        )
 
         text_origin = (12, frame.shape[0] - 38)
         text_dir = (12, frame.shape[0] - 13)
@@ -463,6 +491,7 @@ def process_frames(thresh_strict, thresh_medium, thresh_relaxed,
 # Single-frame API
 # ---------------------------------------------------------------------------
 
+
 def process_frame(frame):
     """Find the pupil + compute 3D gaze for a single frame."""
     frame = crop_to_aspect_ratio(frame)
@@ -479,19 +508,22 @@ def process_frame(frame):
     thresh_relaxed = apply_binary_threshold(gray_frame, darkest_pixel_value, 25)
     thresh_relaxed = mask_outside_square(thresh_relaxed, darkest_point, 250)
 
-    return process_frames(thresh_strict, thresh_medium, thresh_relaxed,
-                          frame, gray_frame, darkest_point, False, False)
+    return process_frames(
+        thresh_strict, thresh_medium, thresh_relaxed, frame, gray_frame, darkest_point, False, False
+    )
 
 
 # ---------------------------------------------------------------------------
 # Camera and video processing
 # ---------------------------------------------------------------------------
 
-def process_camera():
+
+def process_camera(cam_index=0):
     """Process live camera feed for 3D eye tracking."""
     global selected_camera
 
-    cam_index = int(selected_camera.get())
+    if selected_camera is not None:
+        cam_index = int(selected_camera.get())
     backend = _get_capture_backend()
 
     cap = cv2.VideoCapture(cam_index, backend)
@@ -513,9 +545,9 @@ def process_camera():
         process_frame(frame)
 
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
+        if key == ord("q"):
             break
-        elif key == ord(' '):
+        elif key == ord(" "):
             cv2.waitKey(0)
 
     cap.release()
@@ -524,9 +556,7 @@ def process_camera():
 
 def process_video():
     """Browse for a video file and run 3D tracking on it."""
-    video_path = filedialog.askopenfilename(
-        filetypes=[("Video Files", "*.mp4;*.avi")]
-    )
+    video_path = filedialog.askopenfilename(filetypes=[("Video Files", "*.mp4;*.avi")])
     if not video_path:
         return
 
@@ -543,9 +573,9 @@ def process_video():
         process_frame(frame)
 
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
+        if key == ord("q"):
             break
-        elif key == ord(' '):
+        elif key == ord(" "):
             cv2.waitKey(0)
 
     cap.release()
@@ -555,6 +585,7 @@ def process_video():
 # ---------------------------------------------------------------------------
 # GUI
 # ---------------------------------------------------------------------------
+
 
 def selection_gui():
     """Launch the Tkinter GUI for selecting camera or video input."""
@@ -572,22 +603,26 @@ def selection_gui():
     selected_camera.set(str(cameras[0]) if cameras else "No cameras found")
 
     camera_dropdown = ttk.Combobox(
-        root, textvariable=selected_camera,
-        values=[str(cam) for cam in cameras]
+        root, textvariable=selected_camera, values=[str(cam) for cam in cameras]
     )
     camera_dropdown.pack(pady=5)
 
-    tk.Button(root, text="Start Camera",
-              command=lambda: [root.destroy(), process_camera()]).pack(pady=5)
-    tk.Button(root, text="Browse Video",
-              command=lambda: [root.destroy(), process_video()]).pack(pady=5)
+    tk.Button(root, text="Start Camera", command=lambda: [root.destroy(), process_camera()]).pack(
+        pady=5
+    )
+    tk.Button(root, text="Browse Video", command=lambda: [root.destroy(), process_video()]).pack(
+        pady=5
+    )
 
     # Also offer the test video if available
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     test_video = os.path.join(project_root, "repos", "EyeTracker", "eye_test.mp4")
     if os.path.exists(test_video):
-        tk.Button(root, text="Run Test Video (eye_test.mp4)",
-                  command=lambda: [root.destroy(), _run_test_video(test_video)]).pack(pady=5)
+        tk.Button(
+            root,
+            text="Run Test Video (eye_test.mp4)",
+            command=lambda: [root.destroy(), _run_test_video(test_video)],
+        ).pack(pady=5)
 
     if GL_SPHERE_AVAILABLE:
         app = gl_sphere.start_gl_window()
@@ -610,9 +645,9 @@ def _run_test_video(video_path):
         process_frame(frame)
 
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
+        if key == ord("q"):
             break
-        elif key == ord(' '):
+        elif key == ord(" "):
             cv2.waitKey(0)
 
     cap.release()
@@ -624,4 +659,23 @@ def _run_test_video(video_path):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    selection_gui()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Orlosky 3D Eye Tracker")
+    parser.add_argument(
+        "--camera", "-c", type=int, default=None, help="Camera index to use (skip GUI)"
+    )
+    parser.add_argument("--video", "-v", type=str, default=None, help="Video file path (skip GUI)")
+    args = parser.parse_args()
+
+    if args.video:
+        _run_test_video(args.video)
+    elif args.camera is not None:
+        process_camera(args.camera)
+    elif TK_AVAILABLE:
+        selection_gui()
+    else:
+        # No tkinter, no CLI args — try camera 0
+        print("tkinter not available. Starting camera 0 directly.")
+        print("Use --camera N or --video PATH to specify input.")
+        process_camera(0)
