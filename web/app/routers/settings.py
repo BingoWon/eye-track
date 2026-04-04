@@ -45,6 +45,18 @@ async def update_settings(body: dict) -> JSONResponse:
     return JSONResponse({"updated": updated})
 
 
+@router.post("/pause")
+async def toggle_pause(body: dict) -> JSONResponse:
+    """Pause or resume the tracking stream."""
+    paused = body.get("paused")
+    if paused is None:
+        state.paused = not state.paused
+    else:
+        state.paused = bool(paused)
+    logger.info("Tracking %s", "paused" if state.paused else "resumed")
+    return JSONResponse({"paused": state.paused})
+
+
 @router.get("/status")
 async def get_status() -> JSONResponse:
     """Return current tracking status."""

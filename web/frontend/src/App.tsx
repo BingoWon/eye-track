@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CalibrationWizard } from "./components/CalibrationWizard";
 import { CameraSelector } from "./components/CameraSelector";
 import { ControlPanel } from "./components/ControlPanel";
@@ -25,6 +25,8 @@ export default function App() {
 	const [calibration, setCalibration] = useState<CalibrationResult | null>(null);
 	const [showCalibration, setShowCalibration] = useState(false);
 	const [showGazeCursor, setShowGazeCursor] = useState(false);
+	const [paused, setPaused] = useState(false);
+	const pausedBeforeCalibrationRef = useRef(false);
 	const { currentData, currentImage, history, clientFps, handleFrame, clearHistory } =
 		useTrackingData();
 
@@ -33,6 +35,40 @@ export default function App() {
 		url: wsUrl,
 		onFrame: handleFrame,
 	});
+
+	// Sync pause state to backend
+	const setPausedAndSync = useCallback((newPaused: boolean) => {
+		setPaused(newPaused);
+		fetch("/api/pause", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ paused: newPaused }),
+		}).catch(() => {});
+	}, []);
+
+	// Auto-pause when tab is hidden, resume when visible
+	useEffect(() => {
+		const handleVisibility = () => {
+			if (document.hidden) {
+				setPausedAndSync(true);
+			} else {
+				setPausedAndSync(false);
+			}
+		};
+		document.addEventListener("visibilitychange", handleVisibility);
+		return () => document.removeEventListener("visibilitychange", handleVisibility);
+	}, [setPausedAndSync]);
+
+	// Resume tracking during calibration (it needs live data), pause after
+	useEffect(() => {
+		if (showCalibration && paused) {
+			pausedBeforeCalibrationRef.current = true;
+			setPausedAndSync(false);
+		} else if (!showCalibration && pausedBeforeCalibrationRef.current) {
+			pausedBeforeCalibrationRef.current = false;
+			setPausedAndSync(true);
+		}
+	}, [showCalibration]);
 
 	// Show camera selector before the main dashboard
 	if (!cameraSelected) {
@@ -70,8 +106,10 @@ export default function App() {
 				clientFps={clientFps}
 				calibration={calibration}
 				showGazeCursor={showGazeCursor}
+				paused={paused}
 				onCalibrateClick={() => setShowCalibration(true)}
 				onToggleGazeCursor={() => setShowGazeCursor((v) => !v)}
+				onTogglePause={() => setPausedAndSync(!paused)}
 			/>
 
 			<main className="flex-1 p-3 overflow-hidden">

@@ -31,6 +31,10 @@ async def broadcast_loop() -> None:
             target_interval = 1.0 / max(1, settings.stream_fps)
             t0 = time.monotonic()
 
+            if state.paused:
+                await asyncio.sleep(0.1)
+                continue
+
             frame = camera_mgr.get_frame()
             if frame is not None and ws_clients:
                 annotated, tracking = processor.process(frame)

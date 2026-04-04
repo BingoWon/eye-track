@@ -1,5 +1,14 @@
 import { motion } from "framer-motion";
-import { Crosshair, Eye, Flame, LayoutDashboard, MousePointer, Route } from "lucide-react";
+import {
+	Crosshair,
+	Eye,
+	Flame,
+	LayoutDashboard,
+	MousePointer,
+	Pause,
+	Play,
+	Route,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { CalibrationResult } from "../lib/calibration";
 
@@ -14,8 +23,10 @@ interface HeaderProps {
 	clientFps: number;
 	calibration?: CalibrationResult | null;
 	showGazeCursor?: boolean;
+	paused?: boolean;
 	onCalibrateClick?: () => void;
 	onToggleGazeCursor?: () => void;
+	onTogglePause?: () => void;
 }
 
 const VIEW_TABS: {
@@ -66,8 +77,10 @@ export function Header({
 	clientFps,
 	calibration,
 	showGazeCursor,
+	paused,
 	onCalibrateClick,
 	onToggleGazeCursor,
+	onTogglePause,
 }: HeaderProps) {
 	const tabRefs = useRef<Map<ViewMode, HTMLButtonElement>>(new Map());
 	const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -149,8 +162,24 @@ export function Header({
 				))}
 			</nav>
 
-			{/* Right: Calibration + FPS + Connection */}
+			{/* Right: Pause + FPS + Connection */}
 			<div className="flex items-center gap-2.5 min-w-[320px] justify-end">
+				{/* Pause/Resume button */}
+				{onTogglePause && (
+					<button
+						type="button"
+						onClick={onTogglePause}
+						className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-all duration-200 border ${
+							paused
+								? "bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/20 hover:bg-[var(--color-warning)]/15"
+								: "bg-[var(--color-bg-primary)]/40 text-[var(--color-text-muted)] border-[var(--color-border)]/40 hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-active)]/40"
+						}`}
+					>
+						{paused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+						{paused ? "Resume" : "Pause"}
+					</button>
+				)}
+
 				{/* Server FPS */}
 				<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-bg-primary)]/40 border border-[var(--color-border)]/40 text-[11px] font-mono">
 					<span

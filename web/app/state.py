@@ -70,6 +70,7 @@ tracking_state = TrackingState()
 recording = RecordingSession()
 ws_clients: set[WebSocket] = set()
 latest_tracking: dict = {}
+paused: bool = False
 
 
 def _create_singletons() -> None:
