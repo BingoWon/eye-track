@@ -32,6 +32,7 @@ select = ["E", "F", "I", "W"]
 [tool.ruff.lint.per-file-ignores]
 "src/gl_sphere.py" = ["F403", "F405"]
 "web/server.py" = ["E402"]
+"web/app/main.py" = ["E402"]
 "src/pupil_detector.py" = ["F841"]
 "src/eye_tracker_3d.py" = ["F841"]
 
