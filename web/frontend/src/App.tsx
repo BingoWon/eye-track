@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalibrationWizard } from "./components/CalibrationWizard";
 import { CameraSelector } from "./components/CameraSelector";
 import { ControlPanel } from "./components/ControlPanel";
-import { EyeModel3D } from "./components/EyeModel3D";
 import { GazeCursor } from "./components/GazeCursor";
 import { GazeHeatmap } from "./components/GazeHeatmap";
 import { GazeTrail } from "./components/GazeTrail";
@@ -289,15 +288,16 @@ export default function App() {
 						</div>
 					)}
 
-					<div className="h-full grid gap-3 grid-cols-2 grid-rows-2">
+					<div className="h-full grid gap-3 grid-cols-[1fr_1fr]">
 						<VideoFeed image={currentImage} tracking={currentData} />
-						<EyeModel3D tracking={currentData} />
-						<MetricsPanel tracking={currentData} history={history} />
-						<ControlPanel
-							settings={settings}
-							onSettingsChange={updateSettings}
-							onReset={() => updateSettings(DEFAULT_SETTINGS)}
-						/>
+						<div className="grid gap-3 grid-rows-2">
+							<MetricsPanel tracking={currentData} history={history} />
+							<ControlPanel
+								settings={settings}
+								onSettingsChange={updateSettings}
+								onReset={() => updateSettings(DEFAULT_SETTINGS)}
+							/>
+						</div>
 					</div>
 				</main>
 			)}

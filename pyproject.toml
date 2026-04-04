@@ -35,5 +35,3 @@ select = ["E", "F", "I", "W"]
 "web/server.py" = ["E402"]
 "web/app/main.py" = ["E402"]
 "src/pupil_detector.py" = ["F841"]
-"src/eye_tracker_3d.py" = ["F841"]
-

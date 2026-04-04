@@ -33,10 +33,14 @@ def detect_cameras_safe() -> list[dict]:
         return _detect_cameras_macos()
 
     # Fallback: OpenCV probe (Windows/Linux)
-    from src.eye_tracker_3d import detect_cameras as _opencv_detect
-
-    indices = _opencv_detect()
-    return [{"index": i, "name": f"Camera {i}"} for i in indices]
+    backend = _get_capture_backend()
+    cameras = []
+    for i in range(10):
+        cap = cv2.VideoCapture(i, backend)
+        if cap.isOpened():
+            cameras.append({"index": i, "name": f"Camera {i}"})
+            cap.release()
+    return cameras
 
 
 def _detect_cameras_macos() -> list[dict]:

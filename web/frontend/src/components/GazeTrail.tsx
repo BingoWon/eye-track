@@ -254,12 +254,6 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 				<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
 					{displayCount} pts / {n} total
 				</div>
-				{tracking?.gaze && (
-					<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
-						Dir ({tracking.gaze.direction[0].toFixed(2)}, {tracking.gaze.direction[1].toFixed(2)},{" "}
-						{tracking.gaze.direction[2].toFixed(2)})
-					</div>
-				)}
 				{tracking?.pupil && (
 					<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
 						Pupil {tracking.pupil.axes[0].toFixed(1)} x {tracking.pupil.axes[1].toFixed(1)}

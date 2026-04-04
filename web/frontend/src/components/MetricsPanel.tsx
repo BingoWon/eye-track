@@ -1,15 +1,4 @@
-import {
-	Activity,
-	BarChart3,
-	Circle,
-	Crosshair,
-	Eye,
-	MapPin,
-	Navigation,
-	RotateCw,
-	Shield,
-	Target,
-} from "lucide-react";
+import { Activity, BarChart3, Circle, Crosshair, RotateCw, Shield, Target } from "lucide-react";
 import { useRef } from "react";
 import type { TrackingData, TrackingHistory } from "../types/tracking";
 
@@ -38,11 +27,6 @@ function fmt(n: number | undefined | null, decimals = 1): string {
 function fmtCoord2(pair: [number, number] | null | undefined): string {
 	if (!pair) return "\u2014";
 	return `${pair[0].toFixed(1)}, ${pair[1].toFixed(1)}`;
-}
-
-function fmtCoord3(triple: [number, number, number] | null | undefined): string {
-	if (!triple) return "\u2014";
-	return `${triple[0].toFixed(2)}, ${triple[1].toFixed(2)}, ${triple[2].toFixed(2)}`;
 }
 
 /* ---- Metric card — no animations, instant update ---- */
@@ -160,7 +144,7 @@ export function MetricsPanel({ tracking, history }: MetricsPanelProps) {
 
 			{/* Content */}
 			<div className="flex-1 min-h-0 overflow-y-auto p-3 flex flex-col gap-3">
-				{/* 3x3 grid */}
+				{/* 3x2 grid */}
 				<div className="grid grid-cols-3 gap-2">
 					<MetricCard
 						icon={Activity}
@@ -193,18 +177,6 @@ export function MetricsPanel({ tracking, history }: MetricsPanelProps) {
 						label="Pupil Angle"
 						value={fmt(tracking?.pupil?.angle, 1)}
 						unit="deg"
-					/>
-					<MetricCard
-						icon={Eye}
-						label="Eye Center"
-						value={fmtCoord2(tracking?.eyeCenter)}
-						unit="px"
-					/>
-					<MetricCard icon={MapPin} label="Gaze Origin" value={fmtCoord3(tracking?.gaze?.origin)} />
-					<MetricCard
-						icon={Navigation}
-						label="Gaze Dir"
-						value={fmtCoord3(tracking?.gaze?.direction)}
 					/>
 					<MetricCard
 						icon={Target}

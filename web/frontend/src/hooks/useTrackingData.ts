@@ -13,7 +13,6 @@ export function useTrackingData() {
 	const historyRef = useRef<TrackingHistory>({
 		timestamps: [],
 		gazePoints: [],
-		gazeDirections: [],
 		pupilSizes: [],
 	});
 	const [historyVersion, setHistoryVersion] = useState(0);
@@ -40,16 +39,12 @@ export function useTrackingData() {
 				h.gazePoints.push(tracking.pupil.center);
 				h.pupilSizes.push(Math.max(...tracking.pupil.axes));
 			}
-			if (tracking.gaze) {
-				h.gazeDirections.push(tracking.gaze.direction);
-			}
 		}
 
 		// Trim history
 		if (h.timestamps.length > MAX_HISTORY) {
 			h.timestamps = h.timestamps.slice(-MAX_HISTORY);
 			h.gazePoints = h.gazePoints.slice(-MAX_HISTORY);
-			h.gazeDirections = h.gazeDirections.slice(-MAX_HISTORY);
 			h.pupilSizes = h.pupilSizes.slice(-MAX_HISTORY);
 		}
 
@@ -61,7 +56,6 @@ export function useTrackingData() {
 		historyRef.current = {
 			timestamps: [],
 			gazePoints: [],
-			gazeDirections: [],
 			pupilSizes: [],
 		};
 	}, []);

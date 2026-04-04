@@ -52,17 +52,8 @@ class PupilBounds:
 class TrackingState:
     """Per-camera mutable state."""
 
-    MAX_RAYS = 100
-
     def __init__(self) -> None:
-        self.ray_lines: list[tuple] = []
-        self.eye_center_avg: tuple[float, float] = (320.0, 240.0)
-        self.max_observed_distance: int = 202
         self.pupil_bounds: PupilBounds | None = None
-        # Original algorithm state (A/B comparison)
-        self.orig_intersections: list[tuple[int, int]] = []
-        self.orig_centers: list[tuple[int, int]] = []
-        self.orig_avg: tuple[int, int] = (320, 240)
 
     def reset(self) -> None:
         self.__init__()  # type: ignore[misc]
