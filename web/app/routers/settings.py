@@ -28,6 +28,7 @@ SETTINGS_SCHEMA: dict[str, tuple[str, float, float, type]] = {
     "jpegQuality": ("jpeg_quality", 10, 100, int),
     "minConfidence": ("min_confidence", 0.0, 1.0, float),
     "maxAspectRatio": ("max_aspect_ratio", 1.5, 5.0, float),
+    "mode": ("mode", None, None, str),  # no min/max for strings
 }
 
 
@@ -37,6 +38,13 @@ async def update_settings(body: dict) -> JSONResponse:
     updated = {}
     for key, (attr, lo, hi, typ) in SETTINGS_SCHEMA.items():
         if key in body:
+            if key == "mode":
+                val = str(body[key])
+                if val not in ("classic", "enhanced", "screen"):
+                    continue
+                settings.mode = val
+                updated[key] = val
+                continue
             val = typ(body[key])
             val = max(lo, min(hi, val))
             if typ is int:

@@ -27,6 +27,7 @@ class TrackingSettings:
     jpeg_quality: int = 80
     min_confidence: float = 0.3
     max_aspect_ratio: float = 2.5
+    mode: str = "classic"  # "classic", "enhanced", or "screen"
 
 
 # ---------------------------------------------------------------------------
@@ -52,8 +53,16 @@ class PupilBounds:
 class TrackingState:
     """Per-camera mutable state."""
 
+    MAX_RAYS = 100
+
     def __init__(self) -> None:
         self.pupil_bounds: PupilBounds | None = None
+        # 3D mode state
+        self.ray_lines: list[tuple] = []
+        self.eye_center_ewma: tuple[float, float] = (320.0, 240.0)
+        self.orig_intersections: list[tuple[int, int]] = []
+        self.orig_centers: list[tuple[int, int]] = []
+        self.orig_avg: tuple[int, int] = (320, 240)
 
     def reset(self) -> None:
         self.__init__()  # type: ignore[misc]

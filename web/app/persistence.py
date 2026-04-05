@@ -30,6 +30,7 @@ def save_config(
             "jpegQuality": settings.jpeg_quality,
             "minConfidence": settings.min_confidence,
             "maxAspectRatio": settings.max_aspect_ratio,
+            "mode": settings.mode,
         },
         "cameras": camera_indices,
         "gazeCalibrations": gaze_calibrations,
@@ -67,9 +68,15 @@ def apply_settings(settings: TrackingSettings, data: dict) -> None:
         "jpegQuality": "jpeg_quality",
         "minConfidence": "min_confidence",
         "maxAspectRatio": "max_aspect_ratio",
+        "mode": "mode",
     }.items():
         if key in s:
-            setattr(settings, attr, type(getattr(settings, attr))(s[key]))
+            if attr == "mode":
+                val = str(s[key])
+                if val in ("classic", "enhanced", "screen"):
+                    setattr(settings, attr, val)
+            else:
+                setattr(settings, attr, type(getattr(settings, attr))(s[key]))
 
 
 def apply_range_calibration(state: "TrackingState", cam_idx: int, data: dict) -> None:  # noqa: F821
