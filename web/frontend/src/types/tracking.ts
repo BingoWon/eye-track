@@ -4,8 +4,16 @@ export interface PupilData {
 	angle: number;
 }
 
+export interface GazeData {
+	origin: [number, number, number];
+	direction: [number, number, number];
+}
+
 export interface TrackingData {
 	pupil: PupilData | null;
+	eyeCenterClassic?: [number, number] | null;
+	eyeCenterEnhanced?: [number, number] | null;
+	gaze?: GazeData;
 	fps: number;
 	confidence: number;
 	timestamp: number;
@@ -33,6 +41,7 @@ export interface Settings {
 	minConfidence: number;
 	maxAspectRatio: number;
 	rangeMargin: number;
+	mode: "classic" | "enhanced" | "screen";
 }
 
 export interface TrackingHistory {
@@ -51,4 +60,5 @@ export const DEFAULT_SETTINGS: Settings = {
 	minConfidence: 0.3,
 	maxAspectRatio: 2.5,
 	rangeMargin: 1.1,
+	mode: "classic",
 };

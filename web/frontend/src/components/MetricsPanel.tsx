@@ -1,4 +1,13 @@
-import { Activity, BarChart3, Circle, Crosshair, RotateCw, Shield, Target } from "lucide-react";
+import {
+	Activity,
+	BarChart3,
+	Circle,
+	Crosshair,
+	Navigation,
+	RotateCw,
+	Shield,
+	Target,
+} from "lucide-react";
 import { useRef } from "react";
 import type { TrackingData, TrackingHistory } from "../types/tracking";
 
@@ -27,6 +36,11 @@ function fmt(n: number | undefined | null, decimals = 1): string {
 function fmtCoord2(pair: [number, number] | null | undefined): string {
 	if (!pair) return "\u2014";
 	return `${pair[0].toFixed(1)}, ${pair[1].toFixed(1)}`;
+}
+
+function fmtCoord3(triple: [number, number, number] | null | undefined): string {
+	if (!triple) return "\u2014";
+	return `${triple[0].toFixed(2)}, ${triple[1].toFixed(2)}, ${triple[2].toFixed(2)}`;
 }
 
 /* ---- Metric card — no animations, instant update ---- */
@@ -118,6 +132,9 @@ export function MetricsPanel({ tracking, history }: MetricsPanelProps) {
 	const fps = tracking?.fps ?? 0;
 	const confidence = tracking?.confidence ?? 0;
 	const pupilSize = tracking?.pupil ? (tracking.pupil.axes[0] + tracking.pupil.axes[1]) / 2 : null;
+	const hasClassic = tracking?.eyeCenterClassic != null;
+	const hasEnhanced = tracking?.eyeCenterEnhanced != null;
+	const hasGaze = tracking?.gaze != null;
 
 	// Track global max for stable sparkline Y-axis
 	const globalMaxRef = useRef(0);
@@ -185,6 +202,37 @@ export function MetricsPanel({ tracking, history }: MetricsPanelProps) {
 						color={tracking?.pupil ? "var(--color-success)" : "var(--color-danger)"}
 					/>
 				</div>
+
+				{/* Eye center and gaze metrics */}
+				{(hasClassic || hasEnhanced || hasGaze) && (
+					<div className="grid grid-cols-3 gap-2">
+						{hasClassic && (
+							<MetricCard
+								icon={Crosshair}
+								label="Classic Eye"
+								value={fmtCoord2(tracking?.eyeCenterClassic)}
+								unit="px"
+								color="rgb(50, 130, 255)"
+							/>
+						)}
+						{hasEnhanced && (
+							<MetricCard
+								icon={Crosshair}
+								label="Enhanced Eye"
+								value={fmtCoord2(tracking?.eyeCenterEnhanced)}
+								unit="px"
+								color="rgb(200, 50, 200)"
+							/>
+						)}
+						{hasGaze && (
+							<MetricCard
+								icon={Navigation}
+								label="Gaze Direction"
+								value={fmtCoord3(tracking?.gaze?.direction)}
+							/>
+						)}
+					</div>
+				)}
 
 				{/* Sparkline */}
 				<div className="rounded-lg border border-[var(--color-border)]/50 bg-[var(--color-bg-card-hover)]/50 p-2.5">

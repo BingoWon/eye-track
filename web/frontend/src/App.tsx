@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalibrationWizard } from "./components/CalibrationWizard";
 import { CameraSelector } from "./components/CameraSelector";
 import { ControlPanel } from "./components/ControlPanel";
+import { EyeModel3D } from "./components/EyeModel3D";
 import { GazeCursor } from "./components/GazeCursor";
 import { GazeHeatmap } from "./components/GazeHeatmap";
 import { GazeTrail } from "./components/GazeTrail";
@@ -206,6 +207,13 @@ export default function App() {
 		}
 	}, [clearHistory, updateSettings, trackerIds]);
 
+	const handleModeChange = useCallback(
+		(newMode: "classic" | "enhanced" | "screen") => {
+			updateSettings({ mode: newMode });
+		},
+		[updateSettings],
+	);
+
 	const isFullscreenView = viewMode === "heatmap" || viewMode === "trail";
 
 	const handleTrackerSelect = useCallback((ids: string[]) => {
@@ -248,8 +256,14 @@ export default function App() {
 				paused={paused}
 				trackerCount={trackerIds.length}
 				rangeCalibrated={selectedTracker ? rangeCalibrated.has(selectedTracker) : false}
-				onRangeCalibrateClick={() => setShowRangeCalibration(true)}
-				onCalibrateClick={() => setShowCalibration(true)}
+				onRangeCalibrateClick={() => {
+					setShowCalibration(false);
+					setShowRangeCalibration(true);
+				}}
+				onCalibrateClick={() => {
+					setShowRangeCalibration(false);
+					setShowCalibration(true);
+				}}
 				onClearCalibration={clearGazeCalibration}
 				onClearRangeCalibration={clearRangeCalibration}
 				onResetAll={resetAll}
@@ -260,6 +274,8 @@ export default function App() {
 					setPausedAndSync(next);
 				}}
 				onChangeCameraClick={() => setShowCameraSelector(true)}
+				mode={settings.mode}
+				onModeChange={handleModeChange}
 			/>
 
 			{/* Dashboard view */}
@@ -288,9 +304,11 @@ export default function App() {
 						</div>
 					)}
 
-					<div className="h-full grid gap-3 grid-cols-[1fr_1fr]">
-						<VideoFeed image={currentImage} tracking={currentData} />
-						<div className="grid gap-3 grid-rows-2">
+					{settings.mode !== "screen" ? (
+						/* Classic or Enhanced mode: 2x2 grid with 3D model */
+						<div className="h-full grid gap-3 grid-cols-[1fr_1fr] grid-rows-2">
+							<VideoFeed image={currentImage} tracking={currentData} />
+							<EyeModel3D tracking={currentData} />
 							<MetricsPanel tracking={currentData} history={history} />
 							<ControlPanel
 								settings={settings}
@@ -298,7 +316,20 @@ export default function App() {
 								onReset={() => updateSettings(DEFAULT_SETTINGS)}
 							/>
 						</div>
-					</div>
+					) : (
+						/* Screen mode: 2 columns, no 3D model */
+						<div className="h-full grid gap-3 grid-cols-[1fr_1fr]">
+							<VideoFeed image={currentImage} tracking={currentData} />
+							<div className="grid gap-3 grid-rows-2">
+								<MetricsPanel tracking={currentData} history={history} />
+								<ControlPanel
+									settings={settings}
+									onSettingsChange={updateSettings}
+									onReset={() => updateSettings(DEFAULT_SETTINGS)}
+								/>
+							</div>
+						</div>
+					)}
 				</main>
 			)}
 

@@ -34,6 +34,8 @@ interface HeaderProps {
 	onTogglePause?: () => void;
 	onChangeCameraClick?: () => void;
 	onResetAll?: () => void;
+	mode?: "classic" | "enhanced" | "screen";
+	onModeChange?: (mode: "classic" | "enhanced" | "screen") => void;
 }
 
 const VIEW_TABS: {
@@ -139,6 +141,8 @@ export function Header({
 	onTogglePause,
 	onChangeCameraClick,
 	onResetAll,
+	mode,
+	onModeChange,
 }: HeaderProps) {
 	const tabRefs = useRef<Map<ViewMode, HTMLButtonElement>>(new Map());
 	const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -194,40 +198,72 @@ export function Header({
 				)}
 			</div>
 
-			{/* Center: View mode tabs */}
-			<nav className="relative flex items-center gap-0.5 bg-[var(--color-bg-primary)]/50 rounded-xl p-1 border border-[var(--color-border)]/50">
-				<motion.div
-					className="absolute top-1 bottom-1 rounded-lg bg-[var(--color-accent)]/8 border border-[var(--color-accent)]/15 shadow-[0_0_12px_rgba(34,211,238,0.06)]"
-					initial={false}
-					animate={{
-						left: indicator.left,
-						width: indicator.width,
-					}}
-					transition={{
-						type: "spring",
-						stiffness: 500,
-						damping: 35,
-					}}
-				/>
-				{VIEW_TABS.map(({ mode, label, icon: Icon }) => (
-					<button
-						type="button"
-						key={mode}
-						ref={(el) => {
-							if (el) tabRefs.current.set(mode, el);
+			{/* Center: Mode tabs + View tabs */}
+			<div className="flex items-center gap-3">
+				{/* Mode tabs */}
+				{onModeChange && (
+					<nav className="relative flex items-center gap-0.5 bg-[var(--color-bg-primary)]/50 rounded-xl p-1 border border-[var(--color-border)]/50">
+						{(
+							[
+								{ value: "classic", label: "Classic" },
+								{ value: "enhanced", label: "Enhanced" },
+								{ value: "screen", label: "Screen" },
+							] as const
+						).map(({ value, label }) => (
+							<button
+								key={value}
+								type="button"
+								onClick={() => onModeChange(value)}
+								className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 cursor-pointer ${
+									mode === value
+										? "bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20"
+										: "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-transparent"
+								}`}
+							>
+								{label}
+							</button>
+						))}
+					</nav>
+				)}
+
+				{/* Divider dot */}
+				<span className="w-1 h-1 rounded-full bg-[var(--color-text-muted)]/40" />
+
+				{/* View tabs */}
+				<nav className="relative flex items-center gap-0.5 bg-[var(--color-bg-primary)]/50 rounded-xl p-1 border border-[var(--color-border)]/50">
+					<motion.div
+						className="absolute top-1 bottom-1 rounded-lg bg-[var(--color-accent)]/8 border border-[var(--color-accent)]/15 shadow-[0_0_12px_rgba(34,211,238,0.06)]"
+						initial={false}
+						animate={{
+							left: indicator.left,
+							width: indicator.width,
 						}}
-						onClick={() => onViewModeChange(mode)}
-						className={`relative z-10 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 cursor-pointer ${
-							viewMode === mode
-								? "text-[var(--color-accent)]"
-								: "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-						}`}
-					>
-						<Icon className="w-3.5 h-3.5" />
-						{label}
-					</button>
-				))}
-			</nav>
+						transition={{
+							type: "spring",
+							stiffness: 500,
+							damping: 35,
+						}}
+					/>
+					{VIEW_TABS.map(({ mode, label, icon: Icon }) => (
+						<button
+							type="button"
+							key={mode}
+							ref={(el) => {
+								if (el) tabRefs.current.set(mode, el);
+							}}
+							onClick={() => onViewModeChange(mode)}
+							className={`relative z-10 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 cursor-pointer ${
+								viewMode === mode
+									? "text-[var(--color-accent)]"
+									: "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+							}`}
+						>
+							<Icon className="w-3.5 h-3.5" />
+							{label}
+						</button>
+					))}
+				</nav>
+			</div>
 
 			{/* Right: Actions + FPS + Connection */}
 			<div className="flex items-center gap-2 min-w-[320px] justify-end">
@@ -246,7 +282,7 @@ export function Header({
 					<div className="relative group">
 						<HeaderButton
 							icon={ScanEye}
-							label={rangeCalibrated ? "Range ✓" : "Range"}
+							label={rangeCalibrated ? "Bounds Cal ✓" : "Bounds Cal"}
 							onClick={onRangeCalibrateClick}
 							active={!!rangeCalibrated}
 							activeColor="success"
@@ -268,7 +304,7 @@ export function Header({
 					<div className="relative group">
 						<HeaderButton
 							icon={Crosshair}
-							label={calibration ? "Calibrated" : "Calibrate"}
+							label={calibration ? "Gaze Cal ✓" : "Gaze Cal"}
 							onClick={onCalibrateClick}
 							active={!!calibration}
 							activeColor="success"

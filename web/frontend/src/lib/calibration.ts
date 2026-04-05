@@ -220,7 +220,6 @@ export function applyCalibration(
 export function smoothPosition(
 	current: [number, number],
 	previous: [number, number] | null,
-	_alpha = 0.3, // legacy parameter, ignored
 	minAlpha = 0.06,
 	maxAlpha = 0.6,
 	speedThreshold = 0.05,
