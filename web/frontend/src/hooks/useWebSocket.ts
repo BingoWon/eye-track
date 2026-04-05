@@ -27,7 +27,6 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 
 		ws.onopen = () => {
 			setStatus("connected");
-			console.log("[WS] Connected");
 		};
 
 		ws.onmessage = (event) => {
@@ -46,7 +45,6 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 
 		ws.onclose = () => {
 			setStatus("disconnected");
-			console.log("[WS] Disconnected, reconnecting in 2s...");
 			reconnectTimeoutRef.current = window.setTimeout(connect, 2000);
 		};
 
@@ -75,5 +73,5 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 		return () => disconnect();
 	}, [connect, disconnect]);
 
-	return { status, send, disconnect, connect };
+	return { status, send };
 }

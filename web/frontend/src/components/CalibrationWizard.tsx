@@ -45,7 +45,7 @@ const CALIBRATION_POSITIONS: [number, number][] = [
 ];
 
 const REQUIRED_SAMPLES = 40;
-const STABILITY_CHECK_WINDOW = 10; // check last N samples for deviation
+const STABILITY_CHECK_WINDOW = 20; // check last N samples for deviation
 
 function accuracyLabel(accuracy: number): { label: string; color: string } {
 	if (accuracy < 0.02) return { label: "Excellent", color: "var(--color-success)" };
@@ -337,10 +337,6 @@ function CalibrationDot({
 						strokeLinecap="round"
 						strokeDasharray={circumference}
 						strokeDashoffset={dashOffset}
-						style={{
-							transition: "stroke-dashoffset 0.1s linear",
-							filter: `drop-shadow(0 0 6px ${ringColor})`,
-						}}
 					/>
 				</svg>
 
@@ -575,7 +571,7 @@ export function CalibrationWizard({
 		// Real-time stability check — if recent samples deviate too much, fail immediately
 		if (count >= STABILITY_CHECK_WINDOW) {
 			const recentSamples = samplesRef.current.slice(-STABILITY_CHECK_WINDOW);
-			if (!checkStability(recentSamples, 10)) {
+			if (!checkStability(recentSamples, 25)) {
 				// Gaze deviated — immediate failure
 				setDotStatus("failed");
 				setWarningText("Gaze moved — hold Space to retry");
@@ -594,7 +590,7 @@ export function CalibrationWizard({
 
 		// Enough stable samples collected — success!
 		if (count >= REQUIRED_SAMPLES) {
-			if (checkStability(samplesRef.current, 10)) {
+			if (checkStability(samplesRef.current, 25)) {
 				const [sx, sy] = CALIBRATION_POSITIONS[currentPoint];
 				calibrationDataRef.current.push({
 					screenX: sx,

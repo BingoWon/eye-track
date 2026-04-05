@@ -177,11 +177,21 @@ export function RangeCalibrationWizard({
 			} else if ((e.key === " " || e.key === "Enter") && stage === "intro") {
 				e.preventDefault();
 				setStage("collecting");
+			} else if ((e.key === " " || e.key === "Enter") && stage === "complete") {
+				e.preventDefault();
+				onClose();
 			}
 		};
 		window.addEventListener("keydown", handleKey);
 		return () => window.removeEventListener("keydown", handleKey);
 	}, [isOpen, stage, onClose]);
+
+	// Blur any focused button when wizard closes
+	useEffect(() => {
+		if (!isOpen && document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
+		}
+	}, [isOpen]);
 
 	if (!isOpen) return null;
 
@@ -217,7 +227,7 @@ export function RangeCalibrationWizard({
 							className="mt-6 text-3xl font-light tracking-tight"
 							style={{ color: "var(--color-text-primary)" }}
 						>
-							Range Calibration
+							Bounds Calibration
 						</h1>
 						<p
 							className="mt-3 text-[14px] leading-relaxed"
@@ -235,7 +245,7 @@ export function RangeCalibrationWizard({
 								<Eye className="w-3.5 h-3.5 text-[var(--color-accent)]" />
 							</div>
 							<p className="text-[13px] text-[var(--color-text-secondary)]">
-								Takes 5 seconds. Move only your eyes.
+								Takes 5 seconds. Move only your eyes. Do not blink or squint.
 							</p>
 						</div>
 
@@ -298,7 +308,6 @@ export function RangeCalibrationWizard({
 									strokeDasharray={2 * Math.PI * 90}
 									strokeDashoffset={2 * Math.PI * 90 * (1 - progress)}
 									transform="rotate(-90 96 96)"
-									style={{ transition: "stroke-dashoffset 0.1s linear" }}
 								/>
 							</svg>
 
@@ -370,7 +379,7 @@ export function RangeCalibrationWizard({
 							className="mt-5 text-2xl font-light tracking-tight"
 							style={{ color: "var(--color-text-primary)" }}
 						>
-							Range Set
+							Bounds Calibration Complete
 						</h1>
 						<p className="mt-2 text-[13px]" style={{ color: "var(--color-text-secondary)" }}>
 							Bounding ellipse: {computedRx.toFixed(0)} &times; {computedRy.toFixed(0)}px (
@@ -390,6 +399,24 @@ export function RangeCalibrationWizard({
 						>
 							Done
 						</motion.button>
+
+						<button
+							type="button"
+							className="mt-3 text-[13px] cursor-pointer bg-transparent border-none"
+							style={{ color: "var(--color-text-muted)" }}
+							onClick={() => {
+								pointsRef.current = [];
+								sampleCountRef.current = 0;
+								lastTickSecondRef.current = -1;
+								setSampleCount(0);
+								setComputedRx(0);
+								setComputedRy(0);
+								setProgress(0);
+								setStage("collecting");
+							}}
+						>
+							Recalibrate
+						</button>
 					</motion.div>
 				)}
 			</AnimatePresence>
