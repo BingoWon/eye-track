@@ -1,5 +1,5 @@
 [project]
-name = "eye-tracking"
+name = "eye-track"
 version = "0.1.0"
 description = "Open-source 3D eye tracking platform using affordable IR cameras. Cross-platform (macOS, Windows, Linux)."
 readme = "README.md"

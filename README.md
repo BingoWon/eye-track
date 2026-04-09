@@ -1,98 +1,183 @@
-# 👁️ Eye Tracking Platform
+# 👁 EyeTrack
 
-Open-source 3D eye tracking using affordable IR cameras (~$40). Computes real-time 3D gaze vectors from a near-eye infrared camera using classical computer vision — no machine learning required.
+Real-time gaze tracking with affordable IR cameras. Runs in the browser, supports dual-eye stereo tracking, and works on macOS, Windows, and Linux.
 
-**Cross-platform**: macOS · Windows · Linux
+Built on OpenCV pupil detection and polynomial gaze mapping, wrapped in a modern web UI with live video, 3D eye visualization, heatmaps, and gaze trails.
 
-## What It Does
+---
 
-1. **2D Pupil Detection** — Cascaded thresholding + concave angle filtering to robustly detect the pupil ellipse from IR camera frames
-2. **3D Eye Center Estimation** — Orthogonal ray intersection across multiple frames to locate the 3D eyeball center
-3. **3D Gaze Ray** — Projects the 2D pupil onto a spherical eye model to compute a 3D gaze direction vector
-4. **OpenGL Visualization** — Optional wireframe eyeball rendering showing the computed gaze in real-time
-5. **Unity Integration** — Outputs `gaze_vector.txt` for real-time VR/AR gaze control via the included `GazeFollower.cs`
+## ✨ Features
 
-> Based on the algorithms explained in [The Hidden Math Behind 3D Eye Tracking](https://www.youtube.com/watch?v=Gh8LS9erugE) by [JEOresearch](https://github.com/JEOresearch/EyeTracker).
+- **Dual-eye tracking** — up to 2 IR cameras, each assigned to left/right eye
+- **Three tracking modes** — Classic (Orlosky algorithm), Enhanced (EWMA), Screen (direct mapping)
+- **9-point gaze calibration** — Vision Pro-inspired, with stability checking and audio feedback
+- **Bounds calibration** — learns valid pupil range to filter blinks and outliers
+- **Live dashboard** — annotated video feeds, real-time metrics, pupil size sparkline
+- **3D eye model** — dual wireframe eyeballs with gaze direction, mirror/anatomical view toggle
+- **Gaze cursor** — fused screen position from both eyes, weighted by confidence and calibration accuracy
+- **Heatmap & trail** — fullscreen gaze visualizations with theme-aware rendering
+- **Camera binding** — identifies cameras by hardware ID, survives reboots
+- **Dark / light theme** — system-aware with manual toggle
+- **Persistent config** — all settings, calibrations, and camera assignments saved to disk
 
-## Quick Start
+---
+
+## 🏗 Architecture
+
+```mermaid
+graph TB
+    subgraph Hardware
+        CAM1[IR Camera L]
+        CAM2[IR Camera R]
+    end
+
+    subgraph Backend["Backend — FastAPI + OpenCV"]
+        CM[CameraManager<br/>Background capture threads]
+        FP[FrameProcessor<br/>Pupil detection pipeline]
+        BL[Broadcast Loop<br/>WebSocket streaming]
+        TR[TrackerRegistry<br/>Multi-camera state]
+        PS[Persistence<br/>JSON config file]
+        API[REST API<br/>Settings, calibration, cameras]
+    end
+
+    subgraph Frontend["Frontend — React + Three.js"]
+        WS[WebSocket Client]
+        APP[App State<br/>Trackers, calibrations, fused gaze]
+        VF[VideoFeed + Metrics<br/>Per-eye cards]
+        EM[EyeModel3D<br/>Dual wireframe eyeballs]
+        CW[CalibrationWizard<br/>9-point + bounds]
+        VIZ[Heatmap / Trail<br/>Canvas visualizations]
+        GC[GazeCursor<br/>Fused gaze overlay]
+    end
+
+    CAM1 --> CM
+    CAM2 --> CM
+    CM --> FP
+    FP --> BL
+    TR --> FP
+    BL -->|WebSocket frames + tracking| WS
+    API -->|REST| APP
+    PS <--> TR
+    WS --> APP
+    APP --> VF
+    APP --> EM
+    APP --> CW
+    APP --> VIZ
+    APP --> GC
+```
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
 
-### Install & Run
+- Python 3.10+
+- Node.js 18+ with pnpm
+- USB IR camera (tested with GC0308)
+
+### Backend
 
 ```bash
-# Clone the repository
-git clone https://github.com/BingoWon/eye-tracking-platform.git
-cd eye-tracking-platform
-
-# Using uv (recommended)
+# Install dependencies
 uv sync
-uv run python src/eye_tracker_3d.py
 
-# Or using pip
-pip install -e .
-python src/eye_tracker_3d.py
+# Start the server
+uv run uvicorn web.app.main:app --host 0.0.0.0 --port 8100 --ws wsproto
 ```
 
-A GUI will appear letting you select a camera or browse for a video file. A test video (`repos/EyeTracker/eye_test.mp4`) is included for testing without hardware.
+### Frontend
 
-### Controls
-| Key | Action |
-|-----|--------|
-| `Q` | Quit |
-| `Space` | Pause / Resume |
-| `D` | Toggle debug view (2D detector only) |
-
-## Hardware
-
-You need a near-eye infrared camera mounted on glasses. The recommended setup costs under $50 total:
-
-| Item | Spec |
-|------|------|
-| **GC0308 Camera** | 80° no-distortion · 120FPS · Black & White · IR night vision · 640×480 |
-| **USB Extension Cable** | USB 2.0 is sufficient |
-| **USB-A to USB-C Adapter** | If your machine only has USB-C ports |
-| **Cheap Sunglasses** | Wearable mount for the camera |
-| **Electrical Tape** | To secure camera and wires to frame |
-
-> The camera must be mounted very close to the eye (3-5cm), angled to capture a full single-eye close-up. See [DIY Infrared Eye Tracker](https://www.youtube.com/watch?v=8lZqCMRMtC8) for build instructions.
-
-## Platform Support
-
-The capture backend is selected automatically:
-
-| Platform | Backend | Notes |
-|----------|---------|-------|
-| **macOS** | AVFoundation | GC0308 works plug-and-play via UVC |
-| **Windows** | DirectShow | Same as the original upstream project |
-| **Linux** | V4L2 | Standard USB camera support |
-
-OpenGL visualization is optional — the core tracking works without it. On macOS where Apple has deprecated OpenGL, the visualization may show warnings but still functions via the compatibility profile.
-
-## Project Structure
-
-```
-eye-tracking-platform/
-├── src/                          # Cross-platform adapted source code
-│   ├── pupil_detector.py         # 2D pupil detection (cascaded thresholding)
-│   ├── eye_tracker_3d.py         # 3D gaze vector computation + GUI
-│   └── gl_sphere.py              # OpenGL eyeball visualization
-├── docs/                         
-│   └── replication_plan.md       # Detailed hardware list & algorithm walkthrough
-├── repos/
-│   └── EyeTracker/               # Original upstream repo (JEOresearch)
-├── papers/                       # Related academic papers
-├── subtitles/                    # Channel video subtitles for reference
-└── pyproject.toml                # Python project config (uv / pip)
+```bash
+cd web/frontend
+pnpm install
+pnpm dev          # Dev server at http://localhost:5173
 ```
 
-## Acknowledgments
+For production, build the frontend and let FastAPI serve it:
 
-- **Jason Orlosky** ([@JEOresearch](https://www.youtube.com/@jeoresearch)) — Original algorithm and open-source code
-- **Paper**: [Model-aware 3D Eye Gaze from Weak and Few-shot Supervisions](https://arxiv.org/abs/2311.12157) — Advanced gaze estimation approach for future integration
+```bash
+cd web/frontend
+pnpm build        # Output in dist/, auto-mounted by backend
+```
 
-## License
+Then visit `http://localhost:8100`.
 
-MIT
+---
+
+## 📂 Project Structure
+
+```
+├── src/                        # Core algorithms
+│   └── pupil_detector.py       # Cascaded thresholding + ellipse fitting
+├── web/
+│   ├── app/                    # FastAPI backend
+│   │   ├── main.py             # App factory, startup/shutdown
+│   │   ├── broadcast.py        # Frame capture → process → WebSocket push
+│   │   ├── camera.py           # Camera detection, preview, hardware binding
+│   │   ├── processor.py        # Pupil detection, eye center, 3D gaze
+│   │   ├── state.py            # Tracker registry, settings, shared state
+│   │   ├── persistence.py      # JSON config save/load
+│   │   └── routers/            # REST + WebSocket endpoints
+│   └── frontend/               # React SPA
+│       └── src/
+│           ├── components/     # VideoFeed, EyeModel3D, CalibrationWizard, etc.
+│           ├── hooks/          # useWebSocket, useTrackingData, useTheme
+│           ├── lib/            # Calibration math, audio feedback
+│           └── types/          # TypeScript interfaces
+├── docs/                       # Session logs and design docs
+└── pyproject.toml              # Python project config
+```
+
+---
+
+## 🔧 Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Vision | OpenCV, NumPy |
+| Backend | FastAPI, Uvicorn, wsproto |
+| Frontend | React 19, TypeScript, Tailwind CSS v4 |
+| 3D | Three.js, React Three Fiber |
+| Animation | Framer Motion |
+| Tooling | pnpm, Biome, Ruff, uv |
+
+---
+
+## 🎯 How It Works
+
+1. **Capture** — Background threads grab frames from IR cameras at up to 120 fps
+2. **Detect** — Cascaded thresholding finds the darkest region, fits an ellipse to the pupil
+3. **Filter** — Confidence scoring, aspect ratio checks, and bounds calibration reject blinks and noise
+4. **Track** — Eye center estimated via ellipse normal intersections (Classic or EWMA algorithm)
+5. **Calibrate** — 9-point polynomial regression maps pupil position to screen coordinates
+6. **Fuse** — Dual-eye gaze weighted by `confidence × (1 / calibration_error)`
+7. **Stream** — Annotated frames + tracking data pushed over WebSocket at target FPS
+8. **Render** — React renders live feeds, 3D model, metrics, heatmap, and gaze cursor
+
+---
+
+## 🖥 Supported Platforms
+
+| Platform | Camera Backend | Status |
+|----------|---------------|--------|
+| macOS | AVFoundation | Fully tested |
+| Windows | DirectShow | Supported |
+| Linux | V4L2 | Supported |
+
+Camera detection on macOS uses `system_profiler` to avoid triggering iPhone Continuity Camera.
+
+---
+
+## 📖 Documentation
+
+Detailed session logs with design decisions, trade-offs, and implementation notes:
+
+- [2026-04-05 — Web platform build, algorithm optimization, architecture redesign](docs/2026-04-05-session-log.md)
+- [2026-04-08 — Dual-eye tracking, camera binding, performance, theme system](docs/2026-04-08-session-log.md)
+
+---
+
+## 🙏 Credits
+
+Pupil detection algorithm adapted from [JEOresearch/EyeTracker](https://github.com/JEOresearch/EyeTracker) by Jason Orlosky.

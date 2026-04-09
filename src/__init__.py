@@ -1,1 +1,1 @@
-# Eye Tracking Platform - macOS Adapted
+# EyeTrack

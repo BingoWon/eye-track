@@ -1,5 +1,5 @@
 def main():
-    print("Hello from eye-tracking!")
+    print("Hello from eye-track!")
 
 
 if __name__ == "__main__":
