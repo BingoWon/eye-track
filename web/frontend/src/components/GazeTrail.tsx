@@ -1,18 +1,13 @@
 import { useCallback, useEffect, useRef } from "react";
-import { type CalibrationResult, applyCalibration } from "../lib/calibration";
-import type { TrackingData, TrackingHistory } from "../types/tracking";
+import type { TrackingHistory } from "../types/tracking";
 
 interface GazeTrailProps {
 	history: TrackingHistory;
-	tracking: TrackingData | null;
-	calibration?: CalibrationResult | null;
 }
 
-const SOURCE_W = 640;
-const SOURCE_H = 480;
 const MAX_TRAIL_POINTS = 500;
 
-export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
+export function GazeTrail({ history }: GazeTrailProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const animRef = useRef<number>(0);
 	const timeRef = useRef<number>(0);
@@ -39,15 +34,21 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 		const w = rect.width;
 		const h = rect.height;
 
-		// Clear with subtle gradient background
+		// Background — theme-aware
+		const isDark = document.documentElement.getAttribute("data-theme") !== "light";
 		const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7);
-		bgGrad.addColorStop(0, "#0a0f18");
-		bgGrad.addColorStop(1, "#06080f");
+		if (isDark) {
+			bgGrad.addColorStop(0, "#0a0f18");
+			bgGrad.addColorStop(1, "#06080f");
+		} else {
+			bgGrad.addColorStop(0, "#f8fafb");
+			bgGrad.addColorStop(1, "#f0f2f5");
+		}
 		ctx.fillStyle = bgGrad;
 		ctx.fillRect(0, 0, w, h);
 
-		// Draw refined grid with dot pattern
-		ctx.fillStyle = "rgba(33, 38, 45, 0.4)";
+		// Dot grid
+		ctx.fillStyle = isDark ? "rgba(33, 38, 45, 0.4)" : "rgba(0, 0, 0, 0.06)";
 		const gridSpacing = 40;
 		for (let x = 0; x < w; x += gridSpacing) {
 			for (let y = 0; y < h; y += gridSpacing) {
@@ -57,22 +58,11 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 			}
 		}
 
-		// Pre-map all points to canvas coordinates
-		const scaleX = w / SOURCE_W;
-		const scaleY = h / SOURCE_H;
+		// Theme-aware accent color
+		const ac = isDark ? [34, 211, 238] : [8, 145, 178];
 
-		// Build mapped points array once
-		const mappedPoints: [number, number][] = [];
-		const rawPoints = history.gazePoints;
-		for (let i = 0; i < rawPoints.length; i++) {
-			const [px, py] = rawPoints[i];
-			if (calibration) {
-				const [sx, sy] = applyCalibration([px, py], calibration);
-				mappedPoints.push([sx * w, sy * h]);
-			} else {
-				mappedPoints.push([px * scaleX, py * scaleY]);
-			}
-		}
+		// gazePoints are fused screen-space 0-1 — map to canvas pixels
+		const mappedPoints: [number, number][] = history.gazePoints.map(([px, py]) => [px * w, py * h]);
 
 		// Get recent points
 		const sizes = history.pupilSizes;
@@ -81,8 +71,7 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 		const count = n - start;
 
 		if (count < 1) {
-			// No data placeholder
-			ctx.fillStyle = "rgba(72, 79, 88, 0.5)";
+			ctx.fillStyle = isDark ? "rgba(72, 79, 88, 0.5)" : "rgba(0, 0, 0, 0.25)";
 			ctx.font = '13px "Inter", system-ui, sans-serif';
 			ctx.textAlign = "center";
 			ctx.fillText("No gaze data yet", w / 2, h / 2);
@@ -90,7 +79,9 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 			// Subtle pulsing ring
 			const time = timeRef.current;
 			const pulse = 0.3 + 0.2 * Math.sin(time * 2);
-			ctx.strokeStyle = `rgba(34, 211, 238, ${pulse * 0.15})`;
+			ctx.strokeStyle = isDark
+				? `rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, ${pulse * 0.15})`
+				: `rgba(8, 145, 178, ${pulse * 0.2})`;
 			ctx.lineWidth = 1;
 			ctx.beginPath();
 			ctx.arc(w / 2, h / 2 - 30, 20 + Math.sin(time * 1.5) * 3, 0, Math.PI * 2);
@@ -106,7 +97,6 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 			ctx.lineCap = "round";
 			ctx.lineJoin = "round";
 
-			// Draw trail segments with gradient opacity
 			for (let i = 1; i < count; i++) {
 				const idx = start + i;
 				const prevIdx = idx - 1;
@@ -118,17 +108,11 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 				const x1 = mappedPoints[idx][0];
 				const y1 = mappedPoints[idx][1];
 
-				// Use quadratic bezier with midpoint
 				const mx = (x0 + x1) / 2;
 				const my = (y0 + y1) / 2;
 
 				ctx.beginPath();
-
-				// Gradient from cyan to a warmer tone
-				const r = Math.round(34 + progress * 0);
-				const g = Math.round(211 - progress * 30);
-				const b = Math.round(238 - progress * 30);
-				ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+				ctx.strokeStyle = `rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, ${alpha})`;
 				ctx.lineWidth = 1 + progress * 2;
 
 				if (i === 1) {
@@ -159,21 +143,21 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 			const pupilSize = sizes[idx] ?? 2;
 			const radius = Math.max(1.2, Math.min(pupilSize * 0.15, 5)) * (0.3 + 0.7 * progress);
 
-			// Subtle point glow for recent points
-			if (progress > 0.8) {
-				const glowAlpha = (progress - 0.8) * 2 * 0.15;
-				const glowGrad = ctx.createRadialGradient(x, y, 0, x, y, radius * 4);
-				glowGrad.addColorStop(0, `rgba(34, 211, 238, ${glowAlpha})`);
-				glowGrad.addColorStop(1, "rgba(34, 211, 238, 0)");
+			// Point glow for recent points
+			if (progress > 0.6) {
+				const glowAlpha = (progress - 0.6) * 1.5 * (isDark ? 0.2 : 0.25);
+				const glowGrad = ctx.createRadialGradient(x, y, 0, x, y, radius * 6);
+				glowGrad.addColorStop(0, `rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, ${glowAlpha})`);
+				glowGrad.addColorStop(1, `rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, 0)`);
 				ctx.fillStyle = glowGrad;
 				ctx.beginPath();
-				ctx.arc(x, y, radius * 4, 0, Math.PI * 2);
+				ctx.arc(x, y, radius * 6, 0, Math.PI * 2);
 				ctx.fill();
 			}
 
 			ctx.beginPath();
 			ctx.arc(x, y, radius, 0, Math.PI * 2);
-			ctx.fillStyle = `rgba(34, 211, 238, ${alpha})`;
+			ctx.fillStyle = `rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, ${alpha})`;
 			ctx.fill();
 		}
 
@@ -184,42 +168,48 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 			const cy = mappedPoints[lastIdx][1];
 			const time = timeRef.current;
 			const pulse = 0.5 + 0.5 * Math.sin(time * 3.5);
-			const glowRadius = 14 + pulse * 10;
+			const glowRadius = 18 + pulse * 14;
 
-			// Outer glow - layered
-			const glow1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius * 1.5);
-			glow1.addColorStop(0, `rgba(34, 211, 238, ${0.08 + pulse * 0.05})`);
-			glow1.addColorStop(1, "rgba(34, 211, 238, 0)");
+			// Outer glow — wider and stronger
+			const glow1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius * 2);
+			glow1.addColorStop(
+				0,
+				`rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, ${isDark ? 0.12 + pulse * 0.06 : 0.15 + pulse * 0.08})`,
+			);
+			glow1.addColorStop(1, `rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, 0)`);
 			ctx.beginPath();
-			ctx.arc(cx, cy, glowRadius * 1.5, 0, Math.PI * 2);
+			ctx.arc(cx, cy, glowRadius * 2, 0, Math.PI * 2);
 			ctx.fillStyle = glow1;
 			ctx.fill();
 
 			// Inner glow
 			const glow2 = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
-			glow2.addColorStop(0, `rgba(34, 211, 238, ${0.35 + pulse * 0.2})`);
-			glow2.addColorStop(0.4, "rgba(34, 211, 238, 0.1)");
-			glow2.addColorStop(1, "rgba(34, 211, 238, 0)");
+			glow2.addColorStop(
+				0,
+				`rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, ${isDark ? 0.4 + pulse * 0.25 : 0.35 + pulse * 0.15})`,
+			);
+			glow2.addColorStop(0.4, `rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, ${isDark ? 0.1 : 0.08})`);
+			glow2.addColorStop(1, `rgba(${ac[0]}, ${ac[1]}, ${ac[2]}, 0)`);
 			ctx.beginPath();
 			ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
 			ctx.fillStyle = glow2;
 			ctx.fill();
 
-			// Inner solid point
+			// Solid point
 			ctx.beginPath();
-			ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
-			ctx.fillStyle = "#22d3ee";
+			ctx.arc(cx, cy, 5.5, 0, Math.PI * 2);
+			ctx.fillStyle = isDark ? "#22d3ee" : "#0891b2";
 			ctx.fill();
 
-			// White core
+			// Core
 			ctx.beginPath();
-			ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
-			ctx.fillStyle = "#ffffff";
+			ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+			ctx.fillStyle = isDark ? "#ffffff" : "#ffffff";
 			ctx.fill();
 		}
 
-		// Draw coordinate crosshairs - more refined
-		ctx.strokeStyle = "rgba(33, 38, 45, 0.3)";
+		// Crosshairs
+		ctx.strokeStyle = isDark ? "rgba(33, 38, 45, 0.3)" : "rgba(0, 0, 0, 0.08)";
 		ctx.lineWidth = 0.5;
 		ctx.setLineDash([3, 8]);
 		ctx.beginPath();
@@ -233,7 +223,7 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 		// Update time
 		timeRef.current += 1 / 60;
 		animRef.current = requestAnimationFrame(draw);
-	}, [history, calibration]);
+	}, [history]);
 
 	useEffect(() => {
 		animRef.current = requestAnimationFrame(draw);
@@ -254,11 +244,6 @@ export function GazeTrail({ history, tracking, calibration }: GazeTrailProps) {
 				<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
 					{displayCount} pts / {n} total
 				</div>
-				{tracking?.pupil && (
-					<div className="glass-frosted px-2.5 py-1 rounded-lg text-[10px] font-mono text-[var(--color-text-secondary)] border border-[var(--color-border)]/30">
-						Pupil {tracking.pupil.axes[0].toFixed(1)} x {tracking.pupil.axes[1].toFixed(1)}
-					</div>
-				)}
 			</div>
 		</div>
 	);

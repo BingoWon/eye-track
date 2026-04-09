@@ -1,21 +1,17 @@
 import { motion } from "framer-motion";
 import { Flame, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
-import { type CalibrationResult, applyCalibration } from "../lib/calibration";
 import type { TrackingHistory } from "../types/tracking";
 
 interface GazeHeatmapProps {
 	history: TrackingHistory;
 	historyVersion: number;
 	onClear: () => void;
-	calibration?: CalibrationResult | null;
 }
 
-const SRC_W = 640;
-const SRC_H = 480;
-const BLOB_RADIUS = 40;
+const BLOB_RADIUS = 60;
 
-export function GazeHeatmap({ history, historyVersion, onClear, calibration }: GazeHeatmapProps) {
+export function GazeHeatmap({ history, historyVersion, onClear }: GazeHeatmapProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,62 +47,53 @@ export function GazeHeatmap({ history, historyVersion, onClear, calibration }: G
 			const h = canvas.height;
 			const dpr = window.devicePixelRatio || 1;
 
-			// When calibrated, use full canvas (screen space 0-1).
-			// When not calibrated, map from 640x480 camera space.
-			const useCalibrated = !!calibration;
-			const scaleX = useCalibrated ? w : w / SRC_W;
-			const scaleY = useCalibrated ? h : h / SRC_H;
-			const scale = useCalibrated ? 1 : Math.min(scaleX, scaleY);
-			const offX = useCalibrated ? 0 : (w - SRC_W * scale) / 2;
-			const offY = useCalibrated ? 0 : (h - SRC_H * scale) / 2;
+			// gazePoints are fused screen-space coordinates (0-1)
+			// Map directly to canvas pixels
 
 			ctx.clearRect(0, 0, w, h);
 
-			// Background with subtle radial gradient
+			// Background — theme-aware
+			const isDark = document.documentElement.getAttribute("data-theme") !== "light";
 			const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7);
-			bgGrad.addColorStop(0, "#0a0f18");
-			bgGrad.addColorStop(1, "#06080f");
+			if (isDark) {
+				bgGrad.addColorStop(0, "#0a0f18");
+				bgGrad.addColorStop(1, "#06080f");
+			} else {
+				bgGrad.addColorStop(0, "#f8fafb");
+				bgGrad.addColorStop(1, "#f0f2f5");
+			}
 			ctx.fillStyle = bgGrad;
 			ctx.fillRect(0, 0, w, h);
 
-			// Draw refined grid
+			// Grid (screen-space: 10% increments)
 			ctx.save();
-			const gridStep = 80;
-
-			// Grid lines - very subtle
-			ctx.strokeStyle = "rgba(33, 38, 45, 0.3)";
+			ctx.strokeStyle = isDark ? "rgba(33, 38, 45, 0.3)" : "rgba(0, 0, 0, 0.06)";
 			ctx.lineWidth = 1;
-			for (let gx = 0; gx <= SRC_W; gx += gridStep) {
-				const x = offX + gx * scale;
+			for (let frac = 0.1; frac < 1; frac += 0.1) {
 				ctx.beginPath();
-				ctx.moveTo(x, offY);
-				ctx.lineTo(x, offY + SRC_H * scale);
+				ctx.moveTo(frac * w, 0);
+				ctx.lineTo(frac * w, h);
 				ctx.stroke();
-			}
-			for (let gy = 0; gy <= SRC_H; gy += gridStep) {
-				const y = offY + gy * scale;
 				ctx.beginPath();
-				ctx.moveTo(offX, y);
-				ctx.lineTo(offX + SRC_W * scale, y);
+				ctx.moveTo(0, frac * h);
+				ctx.lineTo(w, frac * h);
 				ctx.stroke();
 			}
 
-			// Border with subtle glow
-			ctx.strokeStyle = "rgba(33, 38, 45, 0.6)";
-			ctx.lineWidth = 1;
-			ctx.strokeRect(offX, offY, SRC_W * scale, SRC_H * scale);
+			// Border
+			ctx.strokeStyle = isDark ? "rgba(33, 38, 45, 0.6)" : "rgba(0, 0, 0, 0.1)";
+			ctx.strokeRect(0, 0, w, h);
 
 			// Corner accents
 			const cornerLen = 12 * dpr;
-			ctx.strokeStyle = "rgba(34, 211, 238, 0.25)";
+			ctx.strokeStyle = isDark ? "rgba(34, 211, 238, 0.25)" : "rgba(8, 145, 178, 0.3)";
 			ctx.lineWidth = 1.5;
-			const corners = [
-				[offX, offY, 1, 1],
-				[offX + SRC_W * scale, offY, -1, 1],
-				[offX, offY + SRC_H * scale, 1, -1],
-				[offX + SRC_W * scale, offY + SRC_H * scale, -1, -1],
-			];
-			for (const [cx, cy, dx, dy] of corners) {
+			for (const [cx, cy, dx, dy] of [
+				[0, 0, 1, 1],
+				[w, 0, -1, 1],
+				[0, h, 1, -1],
+				[w, h, -1, -1],
+			]) {
 				ctx.beginPath();
 				ctx.moveTo(cx + cornerLen * dx, cy);
 				ctx.lineTo(cx, cy);
@@ -115,95 +102,67 @@ export function GazeHeatmap({ history, historyVersion, onClear, calibration }: G
 			}
 			ctx.restore();
 
-			// Draw heatmap blobs with richer gradient
-			if (history.gazePoints.length > 0) {
+			// Heatmap blobs — gazePoints are screen-space 0-1
+			const points = history.gazePoints;
+			if (points.length > 0) {
 				ctx.save();
-				ctx.globalCompositeOperation = "lighter";
+				ctx.globalCompositeOperation = isDark ? "lighter" : "source-over";
+				const radius = BLOB_RADIUS * dpr;
 
-				const radius = BLOB_RADIUS * (useCalibrated ? dpr : scale * (1 / dpr) * dpr);
-				const points = history.gazePoints;
-
-				for (let i = 0; i < points.length; i++) {
-					const [px, py] = points[i];
-					let cx: number;
-					let cy: number;
-					if (calibration) {
-						const [sx, sy] = applyCalibration([px, py], calibration);
-						cx = sx * w;
-						cy = sy * h;
-					} else {
-						cx = offX + px * scale;
-						cy = offY + py * scale;
-					}
-
+				for (const [px, py] of points) {
+					const cx = px * w;
+					const cy = py * h;
 					const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-					gradient.addColorStop(0, "rgba(34, 211, 238, 0.05)");
-					gradient.addColorStop(0.2, "rgba(34, 211, 238, 0.035)");
-					gradient.addColorStop(0.5, "rgba(52, 211, 153, 0.018)");
-					gradient.addColorStop(0.8, "rgba(251, 191, 36, 0.006)");
-					gradient.addColorStop(1, "rgba(52, 211, 153, 0)");
-
+					if (isDark) {
+						gradient.addColorStop(0, "rgba(34, 211, 238, 0.06)");
+						gradient.addColorStop(0.2, "rgba(34, 211, 238, 0.04)");
+						gradient.addColorStop(0.5, "rgba(52, 211, 153, 0.02)");
+						gradient.addColorStop(0.8, "rgba(251, 191, 36, 0.008)");
+						gradient.addColorStop(1, "rgba(52, 211, 153, 0)");
+					} else {
+						gradient.addColorStop(0, "rgba(8, 145, 178, 0.07)");
+						gradient.addColorStop(0.2, "rgba(6, 182, 212, 0.045)");
+						gradient.addColorStop(0.5, "rgba(5, 150, 105, 0.02)");
+						gradient.addColorStop(0.8, "rgba(217, 119, 6, 0.006)");
+						gradient.addColorStop(1, "rgba(5, 150, 105, 0)");
+					}
 					ctx.fillStyle = gradient;
 					ctx.beginPath();
 					ctx.arc(cx, cy, radius, 0, Math.PI * 2);
 					ctx.fill();
 				}
-
 				ctx.restore();
 
-				// Draw the most recent point
-				if (points.length > 0) {
-					const [lx, ly] = points[points.length - 1];
-					let lcx: number;
-					let lcy: number;
-					if (calibration) {
-						const [sx, sy] = applyCalibration([lx, ly], calibration);
-						lcx = sx * w;
-						lcy = sy * h;
-					} else {
-						lcx = offX + lx * scale;
-						lcy = offY + ly * scale;
-					}
+				// Latest point highlight
+				const [lx, ly] = points[points.length - 1];
+				const lcx = lx * w;
+				const lcy = ly * h;
 
-					// Outer glow
-					const glow = ctx.createRadialGradient(lcx, lcy, 0, lcx, lcy, 16 * dpr);
-					glow.addColorStop(0, "rgba(34, 211, 238, 0.5)");
-					glow.addColorStop(0.3, "rgba(34, 211, 238, 0.15)");
-					glow.addColorStop(0.6, "rgba(34, 211, 238, 0.05)");
-					glow.addColorStop(1, "rgba(34, 211, 238, 0)");
-					ctx.fillStyle = glow;
-					ctx.beginPath();
-					ctx.arc(lcx, lcy, 16 * dpr, 0, Math.PI * 2);
-					ctx.fill();
+				const accentR = isDark ? "34, 211, 238" : "8, 145, 178";
+				const glow = ctx.createRadialGradient(lcx, lcy, 0, lcx, lcy, 24 * dpr);
+				glow.addColorStop(0, `rgba(${accentR}, ${isDark ? 0.5 : 0.4})`);
+				glow.addColorStop(0.3, `rgba(${accentR}, 0.15)`);
+				glow.addColorStop(0.6, `rgba(${accentR}, 0.05)`);
+				glow.addColorStop(1, `rgba(${accentR}, 0)`);
+				ctx.fillStyle = glow;
+				ctx.beginPath();
+				ctx.arc(lcx, lcy, 16 * dpr, 0, Math.PI * 2);
+				ctx.fill();
 
-					// Core dot with white center
-					ctx.fillStyle = "#22d3ee";
-					ctx.beginPath();
-					ctx.arc(lcx, lcy, 3.5 * dpr, 0, Math.PI * 2);
-					ctx.fill();
+				ctx.fillStyle = isDark ? "#22d3ee" : "#0891b2";
+				ctx.beginPath();
+				ctx.arc(lcx, lcy, 3.5 * dpr, 0, Math.PI * 2);
+				ctx.fill();
 
-					ctx.fillStyle = "#ffffff";
-					ctx.beginPath();
-					ctx.arc(lcx, lcy, 1.5 * dpr, 0, Math.PI * 2);
-					ctx.fill();
-				}
-			}
-
-			// Axis labels - cleaner
-			ctx.fillStyle = "rgba(72, 79, 88, 0.5)";
-			ctx.font = `${9 * dpr}px "Inter", monospace`;
-			ctx.textAlign = "center";
-			for (let gx = 0; gx <= SRC_W; gx += gridStep * 2) {
-				ctx.fillText(String(gx), offX + gx * scale, offY + SRC_H * scale + 14 * dpr);
-			}
-			ctx.textAlign = "right";
-			for (let gy = 0; gy <= SRC_H; gy += gridStep * 2) {
-				ctx.fillText(String(gy), offX - 6 * dpr, offY + gy * scale + 4 * dpr);
+				ctx.fillStyle = isDark ? "#ffffff" : "#1a202c";
+				ctx.beginPath();
+				ctx.arc(lcx, lcy, 1.5 * dpr, 0, Math.PI * 2);
+				ctx.fill();
 			}
 		});
 
 		return () => cancelAnimationFrame(id);
-	}, [history, historyVersion, calibration]);
+	}, [history, historyVersion]);
 
 	return (
 		<div ref={containerRef} className="relative w-full h-full overflow-hidden">

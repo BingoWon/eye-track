@@ -1,22 +1,46 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
+/* -------------------------------------------------------- */
+/*  Theme tokens — light & dark                             */
+/* -------------------------------------------------------- */
+
 @theme {
-	--color-bg-primary: #06080f;
-	--color-bg-card: #0d1117;
-	--color-bg-card-hover: #161b22;
-	--color-border: #21262d;
-	--color-border-active: #30363d;
+	/* Dark theme (default) */
+	--color-bg-primary: #0a0e17;
+	--color-bg-card: #0f1420;
+	--color-bg-card-hover: #171d2b;
+	--color-border: #252d3a;
+	--color-border-active: #3a4456;
 	--color-accent: #22d3ee;
 	--color-accent-dim: #0e7490;
 	--color-success: #34d399;
 	--color-warning: #fbbf24;
 	--color-danger: #f87171;
-	--color-text-primary: #e6edf3;
-	--color-text-secondary: #8b949e;
-	--color-text-muted: #484f58;
+	--color-text-primary: #f0f4f8;
+	--color-text-secondary: #a0aec0;
+	--color-text-muted: #5a6577;
 	--color-glow-cyan: color-mix(in srgb, #22d3ee 15%, transparent);
 	--color-glow-green: color-mix(in srgb, #34d399 15%, transparent);
+}
+
+/* Light theme overrides */
+[data-theme="light"] {
+	--color-bg-primary: #f5f7fa;
+	--color-bg-card: #ffffff;
+	--color-bg-card-hover: #f0f2f5;
+	--color-border: #d8dee6;
+	--color-border-active: #bfc8d4;
+	--color-accent: #0891b2;
+	--color-accent-dim: #06b6d4;
+	--color-success: #059669;
+	--color-warning: #d97706;
+	--color-danger: #dc2626;
+	--color-text-primary: #1a202c;
+	--color-text-secondary: #4a5568;
+	--color-text-muted: #94a3b8;
+	--color-glow-cyan: color-mix(in srgb, #0891b2 10%, transparent);
+	--color-glow-green: color-mix(in srgb, #059669 10%, transparent);
 }
 
 /* -------------------------------------------------------- */
@@ -33,6 +57,8 @@ body {
 	background-color: var(--color-bg-primary);
 	color: var(--color-text-primary);
 	font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	font-size: 14px;
+	line-height: 1.5;
 	overflow: hidden;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
@@ -61,14 +87,13 @@ body {
 	background: var(--color-border-active);
 }
 
-/* Firefox */
 * {
 	scrollbar-width: thin;
 	scrollbar-color: var(--color-border) transparent;
 }
 
 /* -------------------------------------------------------- */
-/*  Focus rings (accessibility)                             */
+/*  Focus rings                                             */
 /* -------------------------------------------------------- */
 
 :focus-visible {
@@ -85,7 +110,7 @@ input:focus-visible {
 }
 
 /* -------------------------------------------------------- */
-/*  Glass effect utility                                    */
+/*  Glass effects — adapt to theme                         */
 /* -------------------------------------------------------- */
 
 .glass {
@@ -106,6 +131,18 @@ input:focus-visible {
 	-webkit-backdrop-filter: blur(20px) saturate(1.4);
 }
 
+[data-theme="light"] .glass {
+	background: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .glass-heavy {
+	background: rgba(255, 255, 255, 0.92);
+}
+
+[data-theme="light"] .glass-frosted {
+	background: rgba(255, 255, 255, 0.65);
+}
+
 /* -------------------------------------------------------- */
 /*  Glow utilities                                          */
 /* -------------------------------------------------------- */
@@ -120,6 +157,14 @@ input:focus-visible {
 
 .glow-success {
 	box-shadow: 0 0 15px rgba(52, 211, 153, 0.08), 0 0 40px rgba(52, 211, 153, 0.04);
+}
+
+[data-theme="light"] .glow-cyan {
+	box-shadow: 0 0 15px rgba(8, 145, 178, 0.1), 0 0 40px rgba(8, 145, 178, 0.05);
+}
+
+[data-theme="light"] .glow-cyan-strong {
+	box-shadow: 0 0 20px rgba(8, 145, 178, 0.15), 0 0 60px rgba(8, 145, 178, 0.08);
 }
 
 /* -------------------------------------------------------- */
@@ -181,21 +226,17 @@ input:focus-visible {
 .animate-pulse-glow {
 	animation: pulse-glow 2s ease-in-out infinite;
 }
-
 .animate-float {
 	animation: float 3s ease-in-out infinite;
 }
-
 .animate-shimmer {
 	background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.04) 50%, transparent 100%);
 	background-size: 200% 100%;
 	animation: shimmer 2s ease-in-out infinite;
 }
-
 .animate-subtle-pulse {
 	animation: subtle-pulse 2s ease-in-out infinite;
 }
-
 .animate-fade-in-up {
 	animation: fade-in-up 0.4s ease-out;
 }
@@ -209,7 +250,7 @@ input:focus-visible {
 }
 
 /* -------------------------------------------------------- */
-/*  Smooth transitions for interactive elements             */
+/*  Interactive elements                                    */
 /* -------------------------------------------------------- */
 
 button,
