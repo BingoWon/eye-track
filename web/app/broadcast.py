@@ -45,6 +45,10 @@ async def broadcast_loop() -> None:
                 if frame is None:
                     continue
 
+                # Apply 180° rotation if camera is mounted upside-down
+                if cam.rotation == 180:
+                    frame = cv2.rotate(frame, cv2.ROTATE_180)
+
                 annotated, tracking = cam.processor.process(frame)
 
                 encode_params = [cv2.IMWRITE_JPEG_QUALITY, settings.jpeg_quality]

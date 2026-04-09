@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Crosshair, MoveHorizontal } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { TrackerState } from "../hooks/useTrackingData";
 import { playComplete, playError, playSuccess } from "../lib/audio";
 import {
 	type CalibrationPoint,
@@ -8,13 +9,13 @@ import {
 	checkStability,
 	computeCalibration,
 } from "../lib/calibration";
-import type { TrackingData } from "../types/tracking";
 
 interface CalibrationWizardProps {
 	isOpen: boolean;
-	onComplete: (result: CalibrationResult) => void;
+	onComplete: (results: Map<string, CalibrationResult>) => void;
 	onClose: () => void;
-	currentTracking: TrackingData | null;
+	/** All active trackers — samples collected from each simultaneously */
+	allTrackers: Map<string, TrackerState>;
 }
 
 type Stage = "intro" | "calibrating" | "complete";
@@ -440,7 +441,7 @@ export function CalibrationWizard({
 	isOpen,
 	onComplete,
 	onClose,
-	currentTracking,
+	allTrackers,
 }: CalibrationWizardProps) {
 	const [stage, setStage] = useState<Stage>("intro");
 	const [currentPoint, setCurrentPoint] = useState(0);
@@ -451,8 +452,20 @@ export function CalibrationWizard({
 	const [calibrationResult, setCalibrationResult] = useState<CalibrationResult | null>(null);
 	const [spaceHeld, setSpaceHeld] = useState(false);
 
-	const samplesRef = useRef<[number, number][]>([]);
-	const calibrationDataRef = useRef<CalibrationPoint[]>([]);
+	// Per-tracker sample collection: { trackerId -> [px, py][] }
+	const samplesRef = useRef<Map<string, [number, number][]>>(new Map());
+	// Per-tracker calibration data: { trackerId -> CalibrationPoint[] }
+	const calibrationDataRef = useRef<Map<string, CalibrationPoint[]>>(new Map());
+
+	// Pick any tracker with valid pupil for stability checking
+	const currentTracking = (() => {
+		for (const state of allTrackers.values()) {
+			if (state.tracking.pupil) return state.tracking;
+		}
+		// Return first tracker's data even without pupil (for non-null)
+		const first = allTrackers.values().next().value;
+		return first?.tracking ?? null;
+	})();
 	const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Reset state when wizard opens
@@ -466,8 +479,8 @@ export function CalibrationWizard({
 			setCompletedPoints([]);
 			setCalibrationResult(null);
 			setSpaceHeld(false);
-			samplesRef.current = [];
-			calibrationDataRef.current = [];
+			samplesRef.current = new Map();
+			calibrationDataRef.current = new Map();
 		}
 	}, [isOpen]);
 
@@ -482,7 +495,7 @@ export function CalibrationWizard({
 				// Start collecting if we were waiting
 				setDotStatus((prev) => {
 					if (prev === "waiting") {
-						samplesRef.current = [];
+						samplesRef.current = new Map();
 						setProgress(0);
 						setWarningText(null);
 						return "collecting";
@@ -502,7 +515,7 @@ export function CalibrationWizard({
 				// If still collecting, abort and reset to waiting
 				setDotStatus((prev) => {
 					if (prev === "collecting") {
-						samplesRef.current = [];
+						samplesRef.current = new Map();
 						setProgress(0);
 						setWarningText("Released — hold Space to retry");
 						// Clear warning after a moment
@@ -550,34 +563,46 @@ export function CalibrationWizard({
 		setDotStatus("waiting");
 		setWarningText(null);
 		setSpaceHeld(false);
-		samplesRef.current = [];
-		calibrationDataRef.current = [];
+		samplesRef.current = new Map();
+		calibrationDataRef.current = new Map();
 	}, []);
 
-	// Collect samples while Space is held
+	// Collect samples while Space is held — from ALL trackers simultaneously
 	useEffect(() => {
 		if (stage !== "calibrating" || dotStatus !== "collecting") return;
-		if (!currentTracking?.pupil?.center) return;
 
-		const sample: [number, number] = [
-			currentTracking.pupil.center[0],
-			currentTracking.pupil.center[1],
-		];
-		samplesRef.current.push(sample);
+		// Collect from each tracker that has valid pupil data
+		let anyCollected = false;
+		for (const [id, state] of allTrackers) {
+			if (!state.tracking.pupil?.center) continue;
+			const samples = samplesRef.current.get(id) ?? [];
+			samples.push([state.tracking.pupil.center[0], state.tracking.pupil.center[1]]);
+			samplesRef.current.set(id, samples);
+			anyCollected = true;
+		}
+		if (!anyCollected) return;
 
-		const count = samplesRef.current.length;
+		// Use the first tracker's sample count for progress (all should be roughly equal)
+		const firstSamples = samplesRef.current.values().next().value;
+		const count = firstSamples?.length ?? 0;
 		setProgress(Math.min(count / REQUIRED_SAMPLES, 1));
 
-		// Real-time stability check — if recent samples deviate too much, fail immediately
+		// Real-time stability check — if ANY tracker's recent samples deviate, fail
 		if (count >= STABILITY_CHECK_WINDOW) {
-			const recentSamples = samplesRef.current.slice(-STABILITY_CHECK_WINDOW);
-			if (!checkStability(recentSamples, 25)) {
-				// Gaze deviated — immediate failure
+			let unstable = false;
+			for (const samples of samplesRef.current.values()) {
+				const recent = samples.slice(-STABILITY_CHECK_WINDOW);
+				if (!checkStability(recent, 25)) {
+					unstable = true;
+					break;
+				}
+			}
+			if (unstable) {
 				setDotStatus("failed");
 				setWarningText("Gaze moved — hold Space to retry");
 				playError();
 				setSpaceHeld(false);
-				samplesRef.current = [];
+				samplesRef.current = new Map();
 				setProgress(0);
 				if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
 				retryTimerRef.current = setTimeout(() => {
@@ -590,13 +615,22 @@ export function CalibrationWizard({
 
 		// Enough stable samples collected — success!
 		if (count >= REQUIRED_SAMPLES) {
-			if (checkStability(samplesRef.current, 25)) {
+			// Check stability for all trackers
+			let allStable = true;
+			for (const samples of samplesRef.current.values()) {
+				if (!checkStability(samples, 25)) {
+					allStable = false;
+					break;
+				}
+			}
+			if (allStable) {
 				const [sx, sy] = CALIBRATION_POSITIONS[currentPoint];
-				calibrationDataRef.current.push({
-					screenX: sx,
-					screenY: sy,
-					samples: [...samplesRef.current],
-				});
+				// Store calibration point for each tracker
+				for (const [id, samples] of samplesRef.current) {
+					const data = calibrationDataRef.current.get(id) ?? [];
+					data.push({ screenX: sx, screenY: sy, samples: [...samples] });
+					calibrationDataRef.current.set(id, data);
+				}
 
 				setDotStatus("success");
 				setProgress(1);
@@ -607,26 +641,39 @@ export function CalibrationWizard({
 				setTimeout(() => {
 					const nextPoint = currentPoint + 1;
 					if (nextPoint >= CALIBRATION_POSITIONS.length) {
-						const result = computeCalibration(calibrationDataRef.current);
-						setCalibrationResult(result);
+						// Compute independent calibration for each tracker
+						const results = new Map<string, CalibrationResult>();
+						for (const [id, data] of calibrationDataRef.current) {
+							results.set(id, computeCalibration(data));
+						}
+						// Show worst accuracy for user awareness
+						let worstAccuracy = 0;
+						for (const r of results.values()) {
+							if (r.accuracy > worstAccuracy) worstAccuracy = r.accuracy;
+						}
+						setCalibrationResult(
+							results.values().next().value
+								? { ...results.values().next().value!, accuracy: worstAccuracy }
+								: null,
+						);
 						setStage("complete");
 						playComplete();
+						onComplete(results);
 					} else {
 						setCurrentPoint(nextPoint);
 						setProgress(0);
 						setDotStatus("waiting");
 						setWarningText(null);
 						setSpaceHeld(false);
-						samplesRef.current = [];
+						samplesRef.current = new Map();
 					}
 				}, 500);
 			} else {
-				// Accumulated samples are unstable
 				setDotStatus("failed");
 				setWarningText("Unstable — hold Space to retry");
 				playError();
 				setSpaceHeld(false);
-				samplesRef.current = [];
+				samplesRef.current = new Map();
 				setProgress(0);
 				if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
 				retryTimerRef.current = setTimeout(() => {
@@ -635,7 +682,7 @@ export function CalibrationWizard({
 				}, 1500);
 			}
 		}
-	}, [currentTracking, stage, currentPoint, dotStatus]);
+	}, [allTrackers, stage, currentPoint, dotStatus, onComplete]);
 
 	// Cleanup
 	useEffect(() => {
@@ -645,8 +692,8 @@ export function CalibrationWizard({
 	}, []);
 
 	const handleFinish = useCallback(() => {
-		if (calibrationResult) onComplete(calibrationResult);
-	}, [calibrationResult, onComplete]);
+		onClose();
+	}, [onClose]);
 
 	const handleRecalibrate = useCallback(() => {
 		setStage("intro");
@@ -657,8 +704,8 @@ export function CalibrationWizard({
 		setCompletedPoints([]);
 		setCalibrationResult(null);
 		setSpaceHeld(false);
-		samplesRef.current = [];
-		calibrationDataRef.current = [];
+		samplesRef.current = new Map();
+		calibrationDataRef.current = new Map();
 	}, []);
 
 	if (!isOpen) return null;

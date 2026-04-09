@@ -1,28 +1,51 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Eye, ScanEye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { TrackerState } from "../hooks/useTrackingData";
 import { playComplete, playCountdownTick, playTick } from "../lib/audio";
-import type { TrackingData } from "../types/tracking";
 
 interface RangeCalibrationWizardProps {
 	isOpen: boolean;
-	onComplete: (bounds: { cx: number; cy: number; rx: number; ry: number }) => void;
+	onComplete: () => void;
 	onClose: () => void;
-	currentTracking: TrackingData | null;
-	trackerId: string | null;
-	rangeMargin: number; // e.g. 1.1 = 10% margin
+	/** All active trackers — bounds collected from each simultaneously */
+	allTrackers: Map<string, TrackerState>;
+	trackerIds: string[];
+	rangeMargin: number;
 }
 
 type Stage = "intro" | "collecting" | "complete";
 
 const DURATION_MS = 5000;
 
+function computeBounds(points: [number, number][], margin: number) {
+	const n = points.length;
+	if (n === 0) return null;
+	let mx = 0;
+	let my = 0;
+	for (const [x, y] of points) {
+		mx += x;
+		my += y;
+	}
+	mx /= n;
+	my /= n;
+	let maxDx = 0;
+	let maxDy = 0;
+	for (const [x, y] of points) {
+		const dx = Math.abs(x - mx);
+		const dy = Math.abs(y - my);
+		if (dx > maxDx) maxDx = dx;
+		if (dy > maxDy) maxDy = dy;
+	}
+	return { cx: mx, cy: my, rx: maxDx * margin, ry: maxDy * margin };
+}
+
 export function RangeCalibrationWizard({
 	isOpen,
 	onComplete,
 	onClose,
-	currentTracking,
-	trackerId,
+	allTrackers,
+	trackerIds,
 	rangeMargin,
 }: RangeCalibrationWizardProps) {
 	const [stage, setStage] = useState<Stage>("intro");
@@ -32,8 +55,8 @@ export function RangeCalibrationWizard({
 	const [sampleCount, setSampleCount] = useState(0);
 
 	const startTimeRef = useRef(0);
-	const pointsRef = useRef<[number, number][]>([]);
-	const sampleCountRef = useRef(0);
+	// Per-tracker point collection
+	const pointsRef = useRef<Map<string, [number, number][]>>(new Map());
 	const animRef = useRef(0);
 	const lastTickSecondRef = useRef(-1);
 
@@ -45,55 +68,49 @@ export function RangeCalibrationWizard({
 			setComputedRx(0);
 			setComputedRy(0);
 			setSampleCount(0);
-			pointsRef.current = [];
-			sampleCountRef.current = 0;
+			pointsRef.current = new Map();
 			lastTickSecondRef.current = -1;
 		}
 	}, [isOpen]);
 
-	// Collect absolute pupil positions during "collecting" stage
+	// Collect pupil positions from ALL trackers during "collecting"
 	useEffect(() => {
-		if (stage !== "collecting" || !currentTracking?.pupil?.center) {
-			return;
+		if (stage !== "collecting") return;
+
+		let totalSamples = 0;
+		for (const [id, state] of allTrackers) {
+			if (!state.tracking.pupil?.center) continue;
+			const [px, py] = state.tracking.pupil.center;
+			const pts = pointsRef.current.get(id) ?? [];
+			pts.push([px, py]);
+			pointsRef.current.set(id, pts);
+			totalSamples = Math.max(totalSamples, pts.length);
 		}
+		setSampleCount(totalSamples);
 
-		const [px, py] = currentTracking.pupil.center;
-		pointsRef.current.push([px, py]);
-		sampleCountRef.current += 1;
-		setSampleCount(sampleCountRef.current);
-
-		// Update live ellipse preview: mean center + max deviations
-		const points = pointsRef.current;
-		const n = points.length;
-		let mx = 0;
-		let my = 0;
-		for (const [x, y] of points) {
-			mx += x;
-			my += y;
+		// Live preview: use aggregate max deviation across all trackers
+		let maxRx = 0;
+		let maxRy = 0;
+		for (const pts of pointsRef.current.values()) {
+			const bounds = computeBounds(pts, rangeMargin);
+			if (bounds) {
+				maxRx = Math.max(maxRx, bounds.rx);
+				maxRy = Math.max(maxRy, bounds.ry);
+			}
 		}
-		mx /= n;
-		my /= n;
+		setComputedRx(maxRx);
+		setComputedRy(maxRy);
+	}, [allTrackers, stage, rangeMargin]);
 
-		let maxDeviationX = 0;
-		let maxDeviationY = 0;
-		for (const [x, y] of points) {
-			const dx = Math.abs(x - mx);
-			const dy = Math.abs(y - my);
-			if (dx > maxDeviationX) maxDeviationX = dx;
-			if (dy > maxDeviationY) maxDeviationY = dy;
-		}
-		setComputedRx(maxDeviationX * rangeMargin);
-		setComputedRy(maxDeviationY * rangeMargin);
-	}, [currentTracking, stage]);
-
-	// When collecting starts, clear any existing range on the backend
-	// so old bounds don't filter out valid data during re-calibration
+	// When collecting starts, clear existing range on ALL trackers
 	useEffect(() => {
-		if (stage !== "collecting" || !trackerId) return;
-		fetch(`/api/trackers/${trackerId}/range-calibrate`, { method: "DELETE" }).catch(() => {});
-	}, [stage, trackerId]);
+		if (stage !== "collecting") return;
+		for (const id of trackerIds) {
+			fetch(`/api/trackers/${id}/range-calibrate`, { method: "DELETE" }).catch(() => {});
+		}
+	}, [stage, trackerIds]);
 
-	// Progress timer during collecting
+	// Progress timer
 	useEffect(() => {
 		if (stage !== "collecting") return;
 
@@ -112,52 +129,34 @@ export function RangeCalibrationWizard({
 			}
 
 			if (p >= 1) {
-				// Compute bounding ellipse from all collected points
-				const points = pointsRef.current;
-				const n = points.length;
-				if (n === 0) {
+				// Compute and POST bounds for each tracker independently
+				let anySuccess = false;
+				let lastRx = 0;
+				let lastRy = 0;
+
+				for (const [id, pts] of pointsRef.current) {
+					const bounds = computeBounds(pts, rangeMargin);
+					if (!bounds) continue;
+					anySuccess = true;
+					lastRx = Math.max(lastRx, bounds.rx);
+					lastRy = Math.max(lastRy, bounds.ry);
+					fetch(`/api/trackers/${id}/range-calibrate`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(bounds),
+					}).catch(() => {});
+				}
+
+				if (!anySuccess) {
 					setStage("intro");
 					return;
 				}
 
-				let mx = 0;
-				let my = 0;
-				for (const [x, y] of points) {
-					mx += x;
-					my += y;
-				}
-				mx /= n;
-				my /= n;
-
-				let maxDeviationX = 0;
-				let maxDeviationY = 0;
-				for (const [x, y] of points) {
-					const dx = Math.abs(x - mx);
-					const dy = Math.abs(y - my);
-					if (dx > maxDeviationX) maxDeviationX = dx;
-					if (dy > maxDeviationY) maxDeviationY = dy;
-				}
-
-				const rx = maxDeviationX * rangeMargin;
-				const ry = maxDeviationY * rangeMargin;
-				const cx = mx;
-				const cy = my;
-
-				setComputedRx(rx);
-				setComputedRy(ry);
+				setComputedRx(lastRx);
+				setComputedRy(lastRy);
 				setStage("complete");
 				playComplete();
-
-				// POST to backend
-				if (trackerId) {
-					fetch(`/api/trackers/${trackerId}/range-calibrate`, {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ cx, cy, rx, ry }),
-					}).catch(() => {});
-				}
-
-				onComplete({ cx, cy, rx, ry });
+				onComplete();
 				return;
 			}
 
@@ -166,7 +165,7 @@ export function RangeCalibrationWizard({
 
 		animRef.current = requestAnimationFrame(tick);
 		return () => cancelAnimationFrame(animRef.current);
-	}, [stage, trackerId, onComplete]);
+	}, [stage, onComplete, rangeMargin]);
 
 	// Keyboard
 	useEffect(() => {
@@ -186,7 +185,6 @@ export function RangeCalibrationWizard({
 		return () => window.removeEventListener("keydown", handleKey);
 	}, [isOpen, stage, onClose]);
 
-	// Blur any focused button when wizard closes
 	useEffect(() => {
 		if (!isOpen && document.activeElement instanceof HTMLElement) {
 			document.activeElement.blur();
@@ -198,15 +196,12 @@ export function RangeCalibrationWizard({
 	return (
 		<motion.div
 			className="fixed inset-0 z-50 flex items-center justify-center"
-			style={{
-				background: "rgba(0, 0, 0, 0.95)",
-			}}
+			style={{ background: "rgba(0, 0, 0, 0.95)" }}
 			initial={{ opacity: 0 }}
 			animate={{ opacity: 1 }}
 			exit={{ opacity: 0 }}
 		>
 			<AnimatePresence mode="wait">
-				{/* Intro */}
 				{stage === "intro" && (
 					<motion.div
 						key="intro"
@@ -222,7 +217,6 @@ export function RangeCalibrationWizard({
 						>
 							<ScanEye className="w-16 h-16 text-[var(--color-accent)]" strokeWidth={1.2} />
 						</motion.div>
-
 						<h1
 							className="mt-6 text-3xl font-light tracking-tight"
 							style={{ color: "var(--color-text-primary)" }}
@@ -236,7 +230,6 @@ export function RangeCalibrationWizard({
 							Look as far as you can in every direction while keeping your head still. This
 							establishes the valid pupil range to filter out blink artifacts.
 						</p>
-
 						<div className="mt-6 flex items-center gap-2">
 							<div
 								className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -248,7 +241,6 @@ export function RangeCalibrationWizard({
 								Takes 5 seconds. Move only your eyes. Do not blink or squint.
 							</p>
 						</div>
-
 						<motion.button
 							type="button"
 							className="mt-8 px-8 py-3 rounded-full text-[15px] font-medium cursor-pointer"
@@ -263,7 +255,6 @@ export function RangeCalibrationWizard({
 						>
 							Start
 						</motion.button>
-
 						<button
 							type="button"
 							className="mt-3 text-[13px] cursor-pointer bg-transparent border-none"
@@ -275,7 +266,6 @@ export function RangeCalibrationWizard({
 					</motion.div>
 				)}
 
-				{/* Collecting */}
 				{stage === "collecting" && (
 					<motion.div
 						key="collecting"
@@ -284,9 +274,7 @@ export function RangeCalibrationWizard({
 						animate={{ opacity: 1, scale: 1 }}
 						exit={{ opacity: 0 }}
 					>
-						{/* Animated expanding circle showing current bounding radius */}
 						<div className="relative w-48 h-48 flex items-center justify-center">
-							{/* Outer progress ring */}
 							<svg className="absolute inset-0 w-full h-full" aria-hidden="true">
 								<circle
 									cx="96"
@@ -310,21 +298,15 @@ export function RangeCalibrationWizard({
 									transform="rotate(-90 96 96)"
 								/>
 							</svg>
-
-							{/* Inner dynamic ellipse (scales with computed radii) */}
 							<motion.div
 								className="rounded-full border-2 border-[var(--color-accent)]"
-								style={{
-									backgroundColor: "rgba(34,211,238,0.06)",
-								}}
+								style={{ backgroundColor: "rgba(34,211,238,0.06)" }}
 								animate={{
 									width: Math.max(20, Math.min(140, computedRx * 0.7)),
 									height: Math.max(20, Math.min(140, computedRy * 0.7)),
 								}}
 								transition={{ type: "spring", stiffness: 300, damping: 25 }}
 							/>
-
-							{/* Center dot */}
 							<div
 								className="absolute rounded-full"
 								style={{
@@ -337,7 +319,6 @@ export function RangeCalibrationWizard({
 								}}
 							/>
 						</div>
-
 						<p
 							className="mt-6 text-[18px] font-medium"
 							style={{ color: "var(--color-text-primary)" }}
@@ -353,7 +334,6 @@ export function RangeCalibrationWizard({
 					</motion.div>
 				)}
 
-				{/* Complete */}
 				{stage === "complete" && (
 					<motion.div
 						key="complete"
@@ -374,7 +354,6 @@ export function RangeCalibrationWizard({
 								<Check className="w-8 h-8 text-[var(--color-success)]" />
 							</div>
 						</motion.div>
-
 						<h1
 							className="mt-5 text-2xl font-light tracking-tight"
 							style={{ color: "var(--color-text-primary)" }}
@@ -385,28 +364,22 @@ export function RangeCalibrationWizard({
 							Bounding ellipse: {computedRx.toFixed(0)} &times; {computedRy.toFixed(0)}px (
 							{sampleCount} samples)
 						</p>
-
 						<motion.button
 							type="button"
 							className="mt-6 px-6 py-2.5 rounded-full text-[14px] font-medium cursor-pointer"
-							style={{
-								backgroundColor: "var(--color-success)",
-								color: "var(--color-bg-primary)",
-							}}
+							style={{ backgroundColor: "var(--color-success)", color: "var(--color-bg-primary)" }}
 							whileHover={{ scale: 1.03 }}
 							whileTap={{ scale: 0.97 }}
 							onClick={onClose}
 						>
 							Done
 						</motion.button>
-
 						<button
 							type="button"
 							className="mt-3 text-[13px] cursor-pointer bg-transparent border-none"
 							style={{ color: "var(--color-text-muted)" }}
 							onClick={() => {
-								pointsRef.current = [];
-								sampleCountRef.current = 0;
+								pointsRef.current = new Map();
 								lastTickSecondRef.current = -1;
 								setSampleCount(0);
 								setComputedRx(0);

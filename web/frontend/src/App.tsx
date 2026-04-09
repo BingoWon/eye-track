@@ -1,38 +1,49 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalibrationWizard } from "./components/CalibrationWizard";
-import { CameraSelector } from "./components/CameraSelector";
+import { CameraSelector, type TrackerSelection } from "./components/CameraSelector";
 import { ControlPanel } from "./components/ControlPanel";
 import { EyeModel3D } from "./components/EyeModel3D";
 import { GazeCursor } from "./components/GazeCursor";
 import { GazeHeatmap } from "./components/GazeHeatmap";
 import { GazeTrail } from "./components/GazeTrail";
 import { Header } from "./components/Header";
-import { MetricsPanel } from "./components/MetricsPanel";
 import { RangeCalibrationWizard } from "./components/RangeCalibrationWizard";
 import { VideoFeed } from "./components/VideoFeed";
+import { useTheme } from "./hooks/useTheme";
 import { useTrackingData } from "./hooks/useTrackingData";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { type CalibrationResult, applyCalibration } from "./lib/calibration";
 import { DEFAULT_SETTINGS } from "./types/tracking";
-import type { Settings } from "./types/tracking";
+import type { ActiveWizard, EyeSide, Settings, TrackingMode, ViewMode } from "./types/tracking";
 
-type ViewMode = "dashboard" | "heatmap" | "trail";
+interface TrackerInfo {
+	id: string;
+	cameraIndex: number;
+	eye: EyeSide;
+	running: boolean;
+	rangeCalibrated: boolean;
+	gazeCalibration: CalibrationResult | null;
+	rotation: number;
+}
 
 export default function App() {
+	const { theme, toggleTheme } = useTheme();
 	const [trackerIds, setTrackerIds] = useState<string[]>([]);
+	const [trackerEyes, setTrackerEyes] = useState<Map<string, EyeSide>>(new Map());
+	const [initialLoading, setInitialLoading] = useState(true);
 	const [showCameraSelector, setShowCameraSelector] = useState(false);
 	const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 	const [viewMode, setViewMode] = useState<ViewMode>("dashboard");
 	const [calibrations, setCalibrations] = useState<Map<string, CalibrationResult>>(new Map());
-	const [showCalibration, setShowCalibration] = useState(false);
-	const [showRangeCalibration, setShowRangeCalibration] = useState(false);
+	const [activeWizard, setActiveWizard] = useState<ActiveWizard>(null);
 	const [rangeCalibrated, setRangeCalibrated] = useState<Set<string>>(new Set());
 	const [showGazeCursor, setShowGazeCursor] = useState(false);
+	const [mirrored, setMirrored] = useState(true);
 	const [paused, setPaused] = useState(false);
-	const [selectedTracker, setSelectedTracker] = useState<string | null>(null);
 	const manuallyPausedRef = useRef(false);
 	const pausedBeforeCalibrationRef = useRef(false);
-	const { trackers, history, historyVersion, handleFrame, clearHistory } = useTrackingData();
+	const { trackers, history, historyVersion, handleFrame, pushGazePoint, clearHistory } =
+		useTrackingData();
 
 	const wsUrl = `ws://${window.location.hostname}:${window.location.port || "5173"}/ws`;
 	const { status: connectionStatus, send } = useWebSocket({
@@ -40,43 +51,72 @@ export default function App() {
 		onFrame: handleFrame,
 	});
 
-	// Default selectedTracker to first tracker when trackerIds are set
-	useEffect(() => {
-		if (trackerIds.length > 0 && selectedTracker === null) {
-			setSelectedTracker(trackerIds[0]);
-		}
-	}, [trackerIds, selectedTracker]);
-
-	// Sync tracker list from backend on every reconnect
+	// Sync tracker list from backend on every (re)connect
 	useEffect(() => {
 		if (connectionStatus !== "connected") return;
 		(async () => {
 			try {
 				const res = await fetch("/api/trackers");
-				const data = await res.json();
-				const ids: string[] = data.trackers?.map((c: any) => c.id) ?? [];
+				const data: { trackers: TrackerInfo[] } = await res.json();
+				const list = data.trackers ?? [];
+				const ids = list.map((t) => t.id);
 				setTrackerIds(ids);
+				const eyes = new Map<string, EyeSide>();
+				const calibrated = new Set<string>();
+				const restoredCals = new Map<string, CalibrationResult>();
+				for (const t of list) {
+					eyes.set(t.id, t.eye);
+					if (t.rangeCalibrated) calibrated.add(t.id);
+					if (t.gazeCalibration) restoredCals.set(t.id, t.gazeCalibration);
+				}
+				setTrackerEyes(eyes);
+				setRangeCalibrated(calibrated);
+				if (restoredCals.size > 0) {
+					setCalibrations(restoredCals);
+					setShowGazeCursor(true);
+				}
 				if (ids.length > 0) {
-					setSelectedTracker((prev) => (prev && ids.includes(prev) ? prev : ids[0]));
+					// Ensure broadcast is running
+					fetch("/api/pause", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ paused: false }),
+					}).catch(() => {});
+					setPaused(false);
 				}
 			} catch {
 				/* ignore */
+			} finally {
+				setInitialLoading(false);
 			}
 		})();
 	}, [connectionStatus]);
 
-	// Get the selected tracker's state
-	const selectedState = selectedTracker ? (trackers.get(selectedTracker) ?? null) : null;
-	const currentData = selectedState?.tracking ?? null;
-	const currentImage = selectedState?.image ?? "";
+	// Eye-tracker lookups
+	const findByEye = useCallback(
+		(eye: EyeSide) => {
+			for (const [id, e] of trackerEyes) {
+				if (e === eye) return id;
+			}
+			return null;
+		},
+		[trackerEyes],
+	);
 
-	// Primary calibration (for heatmap/trail — uses selected tracker's)
-	const primaryCalibration = selectedTracker ? (calibrations.get(selectedTracker) ?? null) : null;
-
-	// Check if any camera is calibrated
+	const leftTrackerId = findByEye("left");
+	const rightTrackerId = findByEye("right");
+	const leftState = leftTrackerId ? (trackers.get(leftTrackerId) ?? null) : null;
+	const rightState = rightTrackerId ? (trackers.get(rightTrackerId) ?? null) : null;
+	const hasBothEyes = leftTrackerId != null && rightTrackerId != null;
 	const hasAnyCalibration = calibrations.size > 0;
+	const allRangeCalibrated =
+		trackerIds.length > 0 && trackerIds.every((id) => rangeCalibrated.has(id));
 
-	// Fused gaze position from all calibrated cameras
+	// Any calibration exists (for header UI state)
+	const anyCalibration =
+		calibrations.size > 0 ? (calibrations.values().next().value ?? null) : null;
+
+	// Fused gaze — weighted by detection confidence × calibration accuracy
 	const fusedGaze = useMemo(() => {
 		let totalWeight = 0;
 		let sx = 0;
@@ -85,7 +125,10 @@ export default function App() {
 			const cal = calibrations.get(id);
 			if (!cal || !state.tracking.pupil) continue;
 			const [x, y] = applyCalibration(state.tracking.pupil.center, cal);
-			const w = state.tracking.confidence;
+			// Weight = detection confidence × inverse calibration error
+			// Lower accuracy (error) → higher weight
+			const calWeight = cal.accuracy > 0 ? 1 / cal.accuracy : 1;
+			const w = state.tracking.confidence * calWeight;
 			sx += x * w;
 			sy += y * w;
 			totalWeight += w;
@@ -94,7 +137,12 @@ export default function App() {
 		return [sx / totalWeight, sy / totalWeight] as [number, number];
 	}, [trackers, calibrations]);
 
-	// Sync pause state to backend
+	// Push fused gaze into history for heatmap/trail
+	useEffect(() => {
+		if (fusedGaze) pushGazePoint(fusedGaze);
+	}, [fusedGaze, pushGazePoint]);
+
+	// Pause
 	const setPausedAndSync = useCallback((newPaused: boolean) => {
 		setPaused(newPaused);
 		fetch("/api/pause", {
@@ -104,35 +152,31 @@ export default function App() {
 		}).catch(() => {});
 	}, []);
 
-	// Auto-pause when tab is hidden — but respect manual pause
 	useEffect(() => {
 		const handleVisibility = () => {
 			if (document.hidden) {
-				// Always pause when tab hidden
 				setPausedAndSync(true);
-			} else {
-				// Only resume if user didn't manually pause
-				if (!manuallyPausedRef.current) {
-					setPausedAndSync(false);
-				}
+			} else if (!manuallyPausedRef.current) {
+				setPausedAndSync(false);
 			}
 		};
 		document.addEventListener("visibilitychange", handleVisibility);
 		return () => document.removeEventListener("visibilitychange", handleVisibility);
 	}, [setPausedAndSync]);
 
-	// Resume tracking during calibration (it needs live data), pause after
+	// Auto-resume during calibration
+	const isCalibrating = activeWizard === "gaze";
 	useEffect(() => {
-		if (showCalibration && paused) {
+		if (isCalibrating && paused) {
 			pausedBeforeCalibrationRef.current = true;
 			setPausedAndSync(false);
-		} else if (!showCalibration && pausedBeforeCalibrationRef.current) {
+		} else if (!isCalibrating && pausedBeforeCalibrationRef.current) {
 			pausedBeforeCalibrationRef.current = false;
 			setPausedAndSync(true);
 		}
-	}, [showCalibration, paused, setPausedAndSync]);
+	}, [isCalibrating, paused, setPausedAndSync]);
 
-	// Handlers (must be before any early return to keep hooks order stable)
+	// Settings
 	const updateSettings = useCallback(
 		(newSettings: Partial<Settings>) => {
 			const merged = { ...settings, ...newSettings };
@@ -147,54 +191,43 @@ export default function App() {
 		[settings, send],
 	);
 
-	const handleCalibrationComplete = useCallback(
-		(result: CalibrationResult) => {
-			if (selectedTracker) {
-				setCalibrations((prev) => {
-					const next = new Map(prev);
-					next.set(selectedTracker, result);
-					return next;
-				});
-			}
-			setShowCalibration(false);
+	// Calibration handlers — operate on ALL trackers simultaneously
+	const handleGazeCalibrationComplete = useCallback(
+		(results: Map<string, CalibrationResult>) => {
+			setCalibrations(results);
+			setActiveWizard(null);
 			setShowGazeCursor(true);
 			clearHistory();
-		},
-		[selectedTracker, clearHistory],
-	);
-
-	const handleRangeCalibrationComplete = useCallback(
-		(_bounds: { cx: number; cy: number; rx: number; ry: number }) => {
-			if (selectedTracker) {
-				setRangeCalibrated((prev) => new Set(prev).add(selectedTracker));
+			// Persist each tracker's calibration to backend
+			for (const [id, result] of results) {
+				fetch(`/api/trackers/${id}/gaze-calibrate`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(result),
+				}).catch(() => {});
 			}
 		},
-		[selectedTracker],
+		[clearHistory],
 	);
 
+	const handleRangeCalibrationComplete = useCallback(() => {
+		setRangeCalibrated(new Set(trackerIds));
+	}, [trackerIds]);
+
 	const clearGazeCalibration = useCallback(() => {
-		if (selectedTracker) {
-			setCalibrations((prev) => {
-				const n = new Map(prev);
-				n.delete(selectedTracker);
-				return n;
-			});
-			setShowGazeCursor(false);
+		setCalibrations(new Map());
+		setShowGazeCursor(false);
+		for (const id of trackerIds) {
+			fetch(`/api/trackers/${id}/gaze-calibrate`, { method: "DELETE" }).catch(() => {});
 		}
-	}, [selectedTracker]);
+	}, [trackerIds]);
 
 	const clearRangeCalibration = useCallback(() => {
-		if (selectedTracker) {
-			setRangeCalibrated((prev) => {
-				const n = new Set(prev);
-				n.delete(selectedTracker);
-				return n;
-			});
-			fetch(`/api/trackers/${selectedTracker}/range-calibrate`, { method: "DELETE" }).catch(
-				() => {},
-			);
+		setRangeCalibrated(new Set());
+		for (const id of trackerIds) {
+			fetch(`/api/trackers/${id}/range-calibrate`, { method: "DELETE" }).catch(() => {});
 		}
-	}, [selectedTracker]);
+	}, [trackerIds]);
 
 	const resetAll = useCallback(() => {
 		setCalibrations(new Map());
@@ -208,62 +241,65 @@ export default function App() {
 	}, [clearHistory, updateSettings, trackerIds]);
 
 	const handleModeChange = useCallback(
-		(newMode: "classic" | "enhanced" | "screen") => {
-			updateSettings({ mode: newMode });
-		},
+		(newMode: TrackingMode) => updateSettings({ mode: newMode }),
 		[updateSettings],
 	);
 
 	const isFullscreenView = viewMode === "heatmap" || viewMode === "trail";
 
-	const handleTrackerSelect = useCallback((ids: string[]) => {
-		setTrackerIds(ids);
-		setSelectedTracker(ids[0] ?? null);
+	const handleTrackerSelect = useCallback((selections: TrackerSelection[]) => {
+		setTrackerIds(selections.map((s) => s.id));
+		const eyes = new Map<string, EyeSide>();
+		for (const s of selections) eyes.set(s.id, s.eye);
+		setTrackerEyes(eyes);
 		setShowCameraSelector(false);
+		setPaused(false);
 	}, []);
 
-	// Show camera selector
+	// Wait for initial backend sync before deciding what to show
+	if (initialLoading) return null;
+
 	if (trackerIds.length === 0 || showCameraSelector) {
 		return <CameraSelector onSelect={handleTrackerSelect} />;
 	}
 
+	// Feed order follows mirror/anatomical mode
+	const feedOrder = mirrored
+		? [
+				{ id: leftTrackerId, label: "Left Eye" },
+				{ id: rightTrackerId, label: "Right Eye" },
+			]
+		: [
+				{ id: rightTrackerId, label: "Right Eye" },
+				{ id: leftTrackerId, label: "Left Eye" },
+			];
+
+	const singleTrackerId = trackerIds[0];
+	const singleEye = trackerEyes.get(singleTrackerId);
+	const singleState = trackers.get(singleTrackerId);
+
 	return (
 		<div className="h-screen relative overflow-hidden flex flex-col">
-			{/* Fullscreen views render behind the header */}
 			{isFullscreenView && (
 				<div className="absolute inset-0 z-0">
 					{viewMode === "heatmap" && (
-						<GazeHeatmap
-							history={history}
-							historyVersion={historyVersion}
-							onClear={clearHistory}
-							calibration={primaryCalibration}
-						/>
+						<GazeHeatmap history={history} historyVersion={historyVersion} onClear={clearHistory} />
 					)}
-					{viewMode === "trail" && (
-						<GazeTrail history={history} tracking={currentData} calibration={primaryCalibration} />
-					)}
+					{viewMode === "trail" && <GazeTrail history={history} />}
 				</div>
 			)}
 
-			{/* Header always on top */}
 			<Header
 				connectionStatus={connectionStatus}
 				viewMode={viewMode}
 				onViewModeChange={setViewMode}
-				calibration={primaryCalibration}
+				calibration={anyCalibration}
 				showGazeCursor={showGazeCursor}
 				paused={paused}
 				trackerCount={trackerIds.length}
-				rangeCalibrated={selectedTracker ? rangeCalibrated.has(selectedTracker) : false}
-				onRangeCalibrateClick={() => {
-					setShowCalibration(false);
-					setShowRangeCalibration(true);
-				}}
-				onCalibrateClick={() => {
-					setShowRangeCalibration(false);
-					setShowCalibration(true);
-				}}
+				rangeCalibrated={allRangeCalibrated}
+				onRangeCalibrateClick={() => setActiveWizard("bounds")}
+				onCalibrateClick={() => setActiveWizard("gaze")}
 				onClearCalibration={clearGazeCalibration}
 				onClearRangeCalibration={clearRangeCalibration}
 				onResetAll={resetAll}
@@ -276,52 +312,66 @@ export default function App() {
 				onChangeCameraClick={() => setShowCameraSelector(true)}
 				mode={settings.mode}
 				onModeChange={handleModeChange}
+				theme={theme}
+				onToggleTheme={toggleTheme}
 			/>
 
-			{/* Dashboard view */}
 			{viewMode === "dashboard" && (
-				<main className="flex-1 overflow-hidden p-3">
-					{/* Camera selector tabs (when multiple cameras) */}
-					{trackerIds.length > 1 && (
-						<div className="flex items-center gap-1.5 mb-3">
-							{trackerIds.map((id) => (
-								<button
-									key={id}
-									type="button"
-									onClick={() => setSelectedTracker(id)}
-									className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 cursor-pointer border ${
-										selectedTracker === id
-											? "bg-[var(--color-accent)]/10 text-[var(--color-accent)] border-[var(--color-accent)]/30"
-											: "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border-[var(--color-border)]/50 hover:border-[var(--color-border-active)]"
-									}`}
-								>
-									{id}
-									{calibrations.has(id) && (
-										<span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" />
-									)}
-								</button>
-							))}
-						</div>
-					)}
-
-					{settings.mode !== "screen" ? (
-						/* Classic or Enhanced mode: 2x2 grid with 3D model */
-						<div className="h-full grid gap-3 grid-cols-[1fr_1fr] grid-rows-2">
-							<VideoFeed image={currentImage} tracking={currentData} />
-							<EyeModel3D tracking={currentData} />
-							<MetricsPanel tracking={currentData} history={history} />
-							<ControlPanel
-								settings={settings}
-								onSettingsChange={updateSettings}
-								onReset={() => updateSettings(DEFAULT_SETTINGS)}
-							/>
+				<main className="flex-1 overflow-y-auto p-3">
+					{hasBothEyes ? (
+						<div className="grid gap-3 grid-cols-3">
+							{feedOrder.map(
+								(feed) =>
+									feed.id && (
+										<VideoFeed
+											key={feed.id}
+											label={feed.label}
+											trackerId={feed.id}
+											image={trackers.get(feed.id)?.image ?? ""}
+											tracking={trackers.get(feed.id)?.tracking ?? null}
+											history={history}
+											showMetrics
+										/>
+									),
+							)}
+							<div className="flex flex-col gap-3">
+								{settings.mode !== "screen" && (
+									<EyeModel3D
+										leftTracking={leftState?.tracking ?? null}
+										rightTracking={rightState?.tracking ?? null}
+										mirrored={mirrored}
+										onToggleMirror={() => setMirrored((v) => !v)}
+									/>
+								)}
+								<ControlPanel
+									settings={settings}
+									onSettingsChange={updateSettings}
+									onReset={() => updateSettings(DEFAULT_SETTINGS)}
+								/>
+							</div>
 						</div>
 					) : (
-						/* Screen mode: 2 columns, no 3D model */
-						<div className="h-full grid gap-3 grid-cols-[1fr_1fr]">
-							<VideoFeed image={currentImage} tracking={currentData} />
-							<div className="grid gap-3 grid-rows-2">
-								<MetricsPanel tracking={currentData} history={history} />
+						/* Single eye: same 3-col grid, feed in first col, sidebar in last */
+						<div className="grid gap-3 grid-cols-3">
+							<VideoFeed
+								label={singleEye === "left" ? "Left Eye" : "Right Eye"}
+								trackerId={singleTrackerId}
+								image={singleState?.image ?? ""}
+								tracking={singleState?.tracking ?? null}
+								history={history}
+								showMetrics
+							/>
+							{/* Empty middle column */}
+							<div />
+							<div className="flex flex-col gap-3">
+								{settings.mode !== "screen" && (
+									<EyeModel3D
+										leftTracking={leftState?.tracking ?? null}
+										rightTracking={rightState?.tracking ?? null}
+										mirrored={mirrored}
+										onToggleMirror={() => setMirrored((v) => !v)}
+									/>
+								)}
 								<ControlPanel
 									settings={settings}
 									onSettingsChange={updateSettings}
@@ -333,23 +383,21 @@ export default function App() {
 				</main>
 			)}
 
-			{/* Calibration overlays */}
 			<CalibrationWizard
-				isOpen={showCalibration}
-				onComplete={handleCalibrationComplete}
-				onClose={() => setShowCalibration(false)}
-				currentTracking={currentData}
+				isOpen={activeWizard === "gaze"}
+				onComplete={handleGazeCalibrationComplete}
+				onClose={() => setActiveWizard(null)}
+				allTrackers={trackers}
 			/>
 			<RangeCalibrationWizard
-				isOpen={showRangeCalibration}
+				isOpen={activeWizard === "bounds"}
 				onComplete={handleRangeCalibrationComplete}
-				onClose={() => setShowRangeCalibration(false)}
-				currentTracking={currentData}
-				trackerId={selectedTracker}
+				onClose={() => setActiveWizard(null)}
+				allTrackers={trackers}
+				trackerIds={trackerIds}
 				rangeMargin={settings.rangeMargin}
 			/>
 
-			{/* Gaze cursor overlay */}
 			<GazeCursor gazePosition={fusedGaze} visible={showGazeCursor && hasAnyCalibration} />
 		</div>
 	);
