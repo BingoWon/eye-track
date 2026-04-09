@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 from web.app.broadcast import broadcast_loop  # noqa: E402
+from web.app.camera import resolve_camera_index  # noqa: E402
 from web.app.persistence import apply_range_calibration, apply_settings, load_config  # noqa: E402
 from web.app.routers import cameras, settings, ws  # noqa: E402
 from web.app.state import registry  # noqa: E402
@@ -46,13 +47,39 @@ async def lifespan(app: FastAPI):
     config = load_config()
     if config:
         apply_settings(app_settings, config)
-        cam_indices = config.get("cameras", [])
-        for idx in cam_indices:
+        camera_configs: dict[str, dict] = config.get("cameras", {})
+
+        # Backwards compat: old config stored cameras as list[int]
+        if isinstance(camera_configs, list):
+            camera_configs = {f"index:{idx}": {"index": idx} for idx in camera_configs}
+
+        for unique_id, cam_cfg in camera_configs.items():
+            # Resolve current index from hardware identifier
+            resolved_index = resolve_camera_index(unique_id)
+            if resolved_index is None:
+                # Fallback to saved index
+                resolved_index = cam_cfg.get("index")
+                if resolved_index is None:
+                    logger.warning("Camera %s not found and no saved index", unique_id)
+                    continue
+                logger.warning(
+                    "Camera %s not matched by ID, trying saved index %d",
+                    unique_id, resolved_index,
+                )
+
+            rotation = int(cam_cfg.get("rotation", 0))
+            eye = str(cam_cfg.get("eye", "right"))
             try:
-                instance = registry.add(int(idx), app_settings)
-                apply_range_calibration(instance.state, int(idx), config)
+                instance = registry.add(
+                    int(resolved_index), app_settings,
+                    rotation=rotation, unique_id=unique_id, eye=eye,
+                )
+                apply_range_calibration(instance.state, cam_cfg)
+                if cam_cfg.get("gazeCal"):
+                    instance.gaze_calibration = cam_cfg["gazeCal"]
             except RuntimeError:
-                logger.warning("Could not open saved camera %d", idx)
+                logger.warning("Could not open camera %s (index %d)", unique_id, resolved_index)
+
         logger.info("Restored %d trackers from config", len(registry.trackers))
     else:
         logger.info("No saved config — waiting for user selection")
@@ -76,7 +103,7 @@ async def lifespan(app: FastAPI):
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
-    title="Eye Tracker WebSocket Server",
+    title="EyeTrack Server",
     version="0.1.0",
     lifespan=lifespan,
 )

@@ -8,7 +8,6 @@ import platform
 import subprocess
 import threading
 import time
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -25,20 +24,21 @@ def detect_cameras_safe() -> list[dict]:
     (avoids triggering iPhone Continuity Camera beep).
     On other platforms, falls back to OpenCV probe.
 
-    Returns a list of dicts: [{"index": 0, "name": "FaceTime HD Camera"}, ...]
+    Returns a list of dicts:
+        [{"index": 0, "name": "USB Camera", "uniqueId": "0x..."}, ...]
     """
     system = platform.system()
 
     if system == "Darwin":
         return _detect_cameras_macos()
 
-    # Fallback: OpenCV probe (Windows/Linux)
+    # Fallback: OpenCV probe (Windows/Linux) — no unique ID available
     backend = _get_capture_backend()
     cameras = []
     for i in range(10):
         cap = cv2.VideoCapture(i, backend)
         if cap.isOpened():
-            cameras.append({"index": i, "name": f"Camera {i}"})
+            cameras.append({"index": i, "name": f"Camera {i}", "uniqueId": f"index:{i}"})
             cap.release()
     return cameras
 
@@ -62,7 +62,8 @@ def _detect_cameras_macos() -> list[dict]:
         cameras = []
         for i, cam in enumerate(cameras_raw):
             name = cam.get("_name", f"Camera {i}")
-            cameras.append({"index": i, "name": name})
+            unique_id = cam.get("spcamera_unique-id", f"index:{i}")
+            cameras.append({"index": i, "name": name, "uniqueId": unique_id})
 
         return cameras
 
@@ -71,17 +72,30 @@ def _detect_cameras_macos() -> list[dict]:
         return []
 
 
+def resolve_camera_index(unique_id: str) -> int | None:
+    """Find the current camera index for a saved unique ID.
+
+    Re-queries system_profiler and matches by unique ID.
+    Returns the current index, or None if the camera is not connected.
+    """
+    cameras = detect_cameras_safe()
+    for cam in cameras:
+        if cam["uniqueId"] == unique_id:
+            return cam["index"]
+    return None
+
+
 class CameraManager:
     """Captures frames from a camera in a background thread and makes
     the latest frame available for processing."""
 
     def __init__(self) -> None:
-        self.cap: Optional[cv2.VideoCapture] = None
+        self.cap: cv2.VideoCapture | None = None
         self.camera_index: int = 0
-        self.latest_frame: Optional[np.ndarray] = None
+        self.latest_frame: np.ndarray | None = None
         self.frame_lock = threading.Lock()
         self._running = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self.camera_fps: float = 0.0
         self._frame_count: int = 0
         self._fps_timer: float = 0.0
@@ -120,13 +134,11 @@ class CameraManager:
             self.cap.release()
             self.cap = None
         self.latest_frame = None
-        logger.info("Camera stopped")
 
     def _capture_loop(self) -> None:
         while self._running and self.cap is not None:
             ret, frame = self.cap.read()
             if not ret:
-                logger.warning("Failed to read frame from camera")
                 time.sleep(0.01)
                 continue
 
@@ -143,7 +155,7 @@ class CameraManager:
                 self._frame_count = 0
                 self._fps_timer = now
 
-    def get_frame(self) -> Optional[np.ndarray]:
+    def get_frame(self) -> np.ndarray | None:
         """Return a copy of the latest captured frame, or None."""
         with self.frame_lock:
             if self.latest_frame is not None:
@@ -156,34 +168,56 @@ class CameraManager:
 
 
 # ---------------------------------------------------------------------------
-# Preview helpers
+# Preview helpers — one CameraManager per index, kept open until closed
 # ---------------------------------------------------------------------------
 
 _preview_lock = threading.Lock()
+_preview_cams: dict[int, CameraManager] = {}
+_preview_failed: set[int] = set()
 
 
-def capture_preview(index: int) -> Optional[bytes]:
-    """Capture a single preview frame from a camera (blocking, thread-safe)."""
+def get_preview_frame(index: int, rotation: int = 0) -> bytes | None:
+    """Get the latest frame from a camera for live preview.
+
+    Each camera index gets its own persistent CameraManager so multiple
+    cameras can be previewed simultaneously without reopening hardware.
+    Trackers must be stopped before calling this.
+    """
+    if index in _preview_failed:
+        return None
+
     with _preview_lock:
-        backend = _get_capture_backend()
-        cap = cv2.VideoCapture(index, backend)
-        if not cap.isOpened():
-            return None
+        cam = _preview_cams.get(index)
+        if cam is None:
+            cam = CameraManager()
+            if not cam.start(index):
+                _preview_failed.add(index)
+                return None
+            _preview_cams[index] = cam
+            # Wait for capture thread to grab the first frame
+            for _ in range(50):
+                if cam.get_frame() is not None:
+                    break
+                time.sleep(0.02)
 
-        # Grab a few frames to let auto-exposure settle
-        for _ in range(5):
-            cap.read()
-        ret, frame = cap.read()
-        cap.release()
+    frame = cam.get_frame()
+    if frame is None:
+        return None
 
-        if not ret or frame is None:
-            return None
+    if rotation == 180:
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
+    frame = crop_to_aspect_ratio(frame)
 
-        frame = cv2.flip(frame, 0)
-        frame = crop_to_aspect_ratio(frame)
+    from web.app.state import settings as app_settings
 
-        ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-        if not ok:
-            return None
+    ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, app_settings.jpeg_quality])
+    return buf.tobytes() if ok else None
 
-        return buf.tobytes()
+
+def close_preview_cameras() -> None:
+    """Release all preview cameras."""
+    with _preview_lock:
+        for cam in _preview_cams.values():
+            cam.stop()
+        _preview_cams.clear()
+        _preview_failed.clear()
