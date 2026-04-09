@@ -54,6 +54,7 @@ async def broadcast_loop() -> None:
                 encode_params = [cv2.IMWRITE_JPEG_QUALITY, settings.jpeg_quality]
                 ok, buf = cv2.imencode(".jpg", annotated, encode_params)
                 if not ok:
+                    logger.warning("Failed to encode frame for tracker %s", cam.id)
                     continue
 
                 b64_image = base64.b64encode(buf.tobytes()).decode("ascii")

@@ -211,7 +211,10 @@ def get_preview_frame(index: int, rotation: int = 0) -> bytes | None:
     from web.app.state import settings as app_settings
 
     ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, app_settings.jpeg_quality])
-    return buf.tobytes() if ok else None
+    if not ok:
+        logger.warning("Failed to encode preview frame for camera %d", index)
+        return None
+    return buf.tobytes()
 
 
 def close_preview_cameras() -> None:
