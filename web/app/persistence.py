@@ -10,16 +10,40 @@ from web.app.state import PupilBounds, TrackingSettings
 
 logger = logging.getLogger("eye-tracker")
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / ".eye-tracking-config.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / ".eye-track-config.json"
+
+VALID_MODES = ("classic", "enhanced", "screen")
 
 
-def save_config(
+def persist_current_state() -> None:
+    """Save the current tracker/settings state to disk.
+
+    Cameras are keyed by unique_id (hardware identifier) so they
+    survive reboots even if the OpenCV index changes.
+    """
+    from web.app.state import registry, settings
+
+    # Build per-camera config keyed by unique_id
+    camera_configs: dict[str, dict] = {}
+    for t in registry.trackers.values():
+        cfg: dict = {"index": t.camera_index, "eye": t.eye}
+        if t.rotation != 0:
+            cfg["rotation"] = t.rotation
+        if t.state.pupil_bounds:
+            b = t.state.pupil_bounds
+            cfg["rangeCal"] = {"cx": b.cx, "cy": b.cy, "rx": b.rx, "ry": b.ry}
+        if t.gaze_calibration:
+            cfg["gazeCal"] = t.gaze_calibration
+        camera_configs[t.unique_id] = cfg
+
+    _save_config(settings, camera_configs)
+
+
+def _save_config(
     settings: TrackingSettings,
-    camera_indices: list[int],
-    gaze_calibrations: dict[int, dict],
-    range_calibrations: dict[int, dict],
+    camera_configs: dict[str, dict],
 ) -> None:
-    """Save all configuration to disk."""
+    """Write configuration to disk."""
     data = {
         "settings": {
             "thresholdStrict": settings.threshold_strict,
@@ -30,15 +54,13 @@ def save_config(
             "jpegQuality": settings.jpeg_quality,
             "minConfidence": settings.min_confidence,
             "maxAspectRatio": settings.max_aspect_ratio,
+            "rangeMargin": settings.range_margin,
             "mode": settings.mode,
         },
-        "cameras": camera_indices,
-        "gazeCalibrations": gaze_calibrations,
-        "rangeCalibrations": range_calibrations,
+        "cameras": camera_configs,
     }
     try:
         CONFIG_PATH.write_text(json.dumps(data, indent=2))
-        logger.info("Config saved to %s", CONFIG_PATH)
     except Exception:
         logger.exception("Failed to save config")
 
@@ -68,22 +90,22 @@ def apply_settings(settings: TrackingSettings, data: dict) -> None:
         "jpegQuality": "jpeg_quality",
         "minConfidence": "min_confidence",
         "maxAspectRatio": "max_aspect_ratio",
+        "rangeMargin": "range_margin",
         "mode": "mode",
     }.items():
         if key in s:
             if attr == "mode":
                 val = str(s[key])
-                if val in ("classic", "enhanced", "screen"):
+                if val in VALID_MODES:
                     setattr(settings, attr, val)
             else:
                 setattr(settings, attr, type(getattr(settings, attr))(s[key]))
 
 
-def apply_range_calibration(state: "TrackingState", cam_idx: int, data: dict) -> None:  # noqa: F821
-    """Apply saved range calibration to a camera state."""
-    rc = data.get("rangeCalibrations", {}).get(str(cam_idx))
+def apply_range_calibration(state: "TrackingState", cam_cfg: dict) -> None:  # noqa: F821
+    """Apply saved range calibration from a camera config dict."""
+    rc = cam_cfg.get("rangeCal")
     if rc:
         state.pupil_bounds = PupilBounds(
             float(rc["cx"]), float(rc["cy"]), float(rc["rx"]), float(rc["ry"])
         )
-        logger.info("Restored range calibration for camera %d", cam_idx)

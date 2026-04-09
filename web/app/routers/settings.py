@@ -8,18 +8,15 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from web.app import state
-from web.app.state import (
-    registry,
-    settings,
-    ws_clients,
-)
+from web.app.persistence import VALID_MODES, persist_current_state
+from web.app.state import registry, settings, ws_clients
 
 logger = logging.getLogger("eye-tracker")
 
 router = APIRouter(prefix="/api", tags=["settings"])
 
-# (min, max, type)
-SETTINGS_SCHEMA: dict[str, tuple[str, float, float, type]] = {
+# (attr_name, min, max, type)
+SETTINGS_SCHEMA: dict[str, tuple[str, float | None, float | None, type]] = {
     "thresholdStrict": ("threshold_strict", 1, 50, int),
     "thresholdMedium": ("threshold_medium", 1, 50, int),
     "thresholdRelaxed": ("threshold_relaxed", 1, 50, int),
@@ -28,7 +25,8 @@ SETTINGS_SCHEMA: dict[str, tuple[str, float, float, type]] = {
     "jpegQuality": ("jpeg_quality", 10, 100, int),
     "minConfidence": ("min_confidence", 0.0, 1.0, float),
     "maxAspectRatio": ("max_aspect_ratio", 1.5, 5.0, float),
-    "mode": ("mode", None, None, str),  # no min/max for strings
+    "rangeMargin": ("range_margin", 1.0, 1.5, float),
+    "mode": ("mode", None, None, str),
 }
 
 
@@ -40,7 +38,7 @@ async def update_settings(body: dict) -> JSONResponse:
         if key in body:
             if key == "mode":
                 val = str(body[key])
-                if val not in ("classic", "enhanced", "screen"):
+                if val not in VALID_MODES:
                     continue
                 settings.mode = val
                 updated[key] = val
@@ -56,10 +54,7 @@ async def update_settings(body: dict) -> JSONResponse:
         return JSONResponse({"error": "No valid settings provided"}, status_code=400)
 
     logger.info("Settings updated: %s", updated)
-    # Persist settings
-    from web.app.routers.cameras import _persist
-
-    _persist()
+    persist_current_state()
     return JSONResponse({"updated": updated})
 
 
@@ -78,21 +73,18 @@ async def toggle_pause(body: dict) -> JSONResponse:
 @router.get("/status")
 async def get_status() -> JSONResponse:
     """Return current tracking status."""
-    trackers_info = [
-        {
-            "id": t.id,
-            "cameraIndex": t.camera_index,
-            "running": t.camera.is_running,
-            "cameraFps": round(t.camera.camera_fps, 1),
-        }
-        for t in registry.trackers.values()
-    ]
-    return JSONResponse(
-        {
-            "trackerCount": len(registry.trackers),
-            "trackers": trackers_info,
-            "streamFps": settings.stream_fps,
-            "connectedClients": len(ws_clients),
-            "latestTracking": state.latest_tracking or None,
-        }
-    )
+    return JSONResponse({
+        "trackerCount": len(registry.trackers),
+        "trackers": [
+            {
+                "id": t.id,
+                "cameraIndex": t.camera_index,
+                "running": t.camera.is_running,
+                "cameraFps": round(t.camera.camera_fps, 1),
+            }
+            for t in registry.trackers.values()
+        ],
+        "streamFps": settings.stream_fps,
+        "connectedClients": len(ws_clients),
+        "latestTracking": state.latest_tracking or None,
+    })

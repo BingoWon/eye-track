@@ -1,14 +1,23 @@
+let ctx: AudioContext | null = null;
+
+function getContext(): AudioContext {
+	if (!ctx || ctx.state === "closed") {
+		ctx = new AudioContext();
+	}
+	return ctx;
+}
+
 export function playTone(frequency: number, duration: number, volume = 0.15) {
-	const ctx = new AudioContext();
-	const osc = ctx.createOscillator();
-	const gain = ctx.createGain();
+	const ac = getContext();
+	const osc = ac.createOscillator();
+	const gain = ac.createGain();
 	osc.connect(gain);
-	gain.connect(ctx.destination);
+	gain.connect(ac.destination);
 	osc.frequency.value = frequency;
 	gain.gain.value = volume;
 	osc.start();
-	gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-	osc.stop(ctx.currentTime + duration);
+	gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+	osc.stop(ac.currentTime + duration);
 }
 
 export function playSuccess() {
@@ -27,7 +36,6 @@ export function playComplete() {
 	setTimeout(() => playTone(1100, 0.2), 200);
 }
 export function playCountdownTick(secondsRemaining: number) {
-	// Higher pitch as countdown progresses
 	const freq = 400 + (5 - secondsRemaining) * 80;
 	playTone(freq, 0.08, 0.06);
 }

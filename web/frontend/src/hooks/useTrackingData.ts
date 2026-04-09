@@ -29,27 +29,35 @@ export function useTrackingData() {
 			return next;
 		});
 
-		// Update history — aggregate pupil data from ALL cameras
+		// Per-frame pupil sizes (average across all trackers with valid pupils)
 		const h = historyRef.current;
+		let totalSize = 0;
+		let sizeCount = 0;
 		for (const frame of frames) {
-			const tracking = frame.tracking;
-			h.timestamps.push(tracking.timestamp);
-
-			if (tracking.pupil) {
-				h.gazePoints.push(tracking.pupil.center);
-				h.pupilSizes.push(Math.max(...tracking.pupil.axes));
+			if (frame.tracking.pupil) {
+				totalSize += Math.max(...frame.tracking.pupil.axes);
+				sizeCount++;
 			}
 		}
+		if (sizeCount > 0) {
+			h.pupilSizes.push(totalSize / sizeCount);
+			h.timestamps.push(frames[0].tracking.timestamp);
+		}
 
-		// Trim history
+		// Trim
 		if (h.timestamps.length > MAX_HISTORY) {
 			h.timestamps = h.timestamps.slice(-MAX_HISTORY);
 			h.gazePoints = h.gazePoints.slice(-MAX_HISTORY);
 			h.pupilSizes = h.pupilSizes.slice(-MAX_HISTORY);
 		}
 
-		// Bump version so consumers re-render
 		setHistoryVersion((v) => v + 1);
+	}, []);
+
+	/** Push a fused gaze point (screen-space 0-1) into history.
+	 *  Called from App after computing the weighted average. */
+	const pushGazePoint = useCallback((point: [number, number]) => {
+		historyRef.current.gazePoints.push(point);
 	}, []);
 
 	const clearHistory = useCallback(() => {
@@ -65,6 +73,7 @@ export function useTrackingData() {
 		history: historyRef.current,
 		historyVersion,
 		handleFrame,
+		pushGazePoint,
 		clearHistory,
 	};
 }

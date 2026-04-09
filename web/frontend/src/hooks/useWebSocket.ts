@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { FrameMessage, TrackerFrame } from "../types/tracking";
+import type { ConnectionStatus, FrameMessage, TrackerFrame } from "../types/tracking";
 
 interface UseWebSocketOptions {
 	url: string;
 	onFrame?: (trackers: TrackerFrame[]) => void;
-	onStatus?: (status: any) => void;
+	onStatus?: (status: Record<string, unknown>) => void;
 }
-
-type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
 
 export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 	const wsRef = useRef<WebSocket | null>(null);
@@ -62,7 +60,7 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 		setStatus("disconnected");
 	}, []);
 
-	const send = useCallback((data: any) => {
+	const send = useCallback((data: Record<string, unknown>) => {
 		if (wsRef.current?.readyState === WebSocket.OPEN) {
 			wsRef.current.send(JSON.stringify(data));
 		}

@@ -20,35 +20,22 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     ws_clients.add(ws)
     logger.info("WebSocket client connected (%d total)", len(ws_clients))
 
-    # Send initial status with list of active trackers
     try:
-        trackers_info = [
-            {
-                "id": t.id,
-                "cameraIndex": t.camera_index,
-                "running": t.camera.is_running,
-                "cameraFps": round(t.camera.camera_fps, 1),
-            }
-            for t in registry.trackers.values()
-        ]
-        await ws.send_text(
-            json.dumps(
-                {
-                    "type": "status",
-                    "trackers": trackers_info,
-                    "streamFps": settings.stream_fps,
-                }
-            )
-        )
+        await ws.send_text(json.dumps({
+            "type": "status",
+            "trackers": [
+                {"id": t.id, "cameraIndex": t.camera_index}
+                for t in registry.trackers.values()
+            ],
+            "streamFps": settings.stream_fps,
+        }))
     except Exception:
         ws_clients.discard(ws)
         return
 
     try:
-        # Keep connection alive; listen for client messages (unused for now)
         while True:
             data = await ws.receive_text()
-            # Clients can send ping / settings; currently a no-op placeholder.
             try:
                 msg = json.loads(data)
                 if msg.get("type") == "ping":

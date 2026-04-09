@@ -27,6 +27,7 @@ class TrackingSettings:
     jpeg_quality: int = 80
     min_confidence: float = 0.3
     max_aspect_ratio: float = 2.5
+    range_margin: float = 1.1  # bounding ellipse margin (1.1 = 10%)
     mode: str = "classic"  # "classic", "enhanced", or "screen"
 
 
@@ -58,14 +59,19 @@ class TrackingState:
     def __init__(self) -> None:
         self.pupil_bounds: PupilBounds | None = None
         # 3D mode state
-        self.ray_lines: list[tuple] = []
+        self.ray_lines: list[tuple[tuple[float, float], tuple[float, float], float]] = []
         self.eye_center_ewma: tuple[float, float] = (320.0, 240.0)
         self.orig_intersections: list[tuple[int, int]] = []
         self.orig_centers: list[tuple[int, int]] = []
         self.orig_avg: tuple[int, int] = (320, 240)
 
     def reset(self) -> None:
-        self.__init__()  # type: ignore[misc]
+        self.pupil_bounds = None
+        self.ray_lines = []
+        self.eye_center_ewma = (320.0, 240.0)
+        self.orig_intersections = []
+        self.orig_centers = []
+        self.orig_avg = (320, 240)
 
 
 # ---------------------------------------------------------------------------
@@ -79,9 +85,13 @@ class Tracker:
 
     id: str
     camera_index: int
+    unique_id: str  # hardware identifier (survives reboots)
+    eye: str  # "left" or "right"
     camera: "CameraManager"  # noqa: F821
     processor: "FrameProcessor"  # noqa: F821
     state: TrackingState
+    rotation: int = 0  # 0 or 180 degrees
+    gaze_calibration: dict | None = None  # {coeffsX, coeffsY, accuracy, timestamp}
 
 
 # ---------------------------------------------------------------------------
@@ -103,10 +113,19 @@ class TrackerRegistry:
                 return t
         return None
 
-    def add(self, camera_index: int, settings: TrackingSettings) -> Tracker:
-        # Return existing tracker if camera already in use
+    def add(
+        self,
+        camera_index: int,
+        settings: TrackingSettings,
+        rotation: int = 0,
+        unique_id: str = "",
+        eye: str = "right",
+    ) -> Tracker:
+        # Return existing tracker if camera already in use, but update rotation/eye
         existing = self.find_by_index(camera_index)
         if existing:
+            existing.rotation = 180 if rotation == 180 else 0
+            existing.eye = eye if eye in ("left", "right") else "right"
             return existing
 
         from web.app.camera import CameraManager
@@ -121,12 +140,15 @@ class TrackerRegistry:
         tracker = Tracker(
             id=cid,
             camera_index=camera_index,
+            unique_id=unique_id or f"index:{camera_index}",
+            eye=eye if eye in ("left", "right") else "right",
             camera=cam,
             processor=FrameProcessor(settings, state),
             state=state,
+            rotation=180 if rotation == 180 else 0,
         )
         self.trackers[cid] = tracker
-        logger.info("Tracker %s added (index %d)", cid, camera_index)
+        logger.info("Tracker %s added (index %d, uid %s)", cid, camera_index, tracker.unique_id)
         return tracker
 
     def remove(self, cid: str) -> bool:

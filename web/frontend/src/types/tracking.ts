@@ -1,3 +1,13 @@
+export type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
+export type ViewMode = "dashboard" | "heatmap" | "trail";
+export type TrackingMode = "classic" | "enhanced" | "screen";
+export type ActiveWizard = null | "bounds" | "gaze";
+export type EyeSide = "left" | "right";
+
+/** Source camera frame dimensions (must match crop_to_aspect_ratio output). */
+export const SOURCE_W = 640;
+export const SOURCE_H = 480;
+
 export interface PupilData {
 	center: [number, number];
 	axes: [number, number];
@@ -41,7 +51,7 @@ export interface Settings {
 	minConfidence: number;
 	maxAspectRatio: number;
 	rangeMargin: number;
-	mode: "classic" | "enhanced" | "screen";
+	mode: TrackingMode;
 }
 
 export interface TrackingHistory {

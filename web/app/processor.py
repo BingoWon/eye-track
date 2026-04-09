@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import random
 import time
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -24,10 +23,29 @@ from web.app.state import TrackingSettings, TrackingState
 
 logger = logging.getLogger("eye-tracker")
 
+# Frame defaults (must match crop_to_aspect_ratio output)
+DEFAULT_EYE_CENTER = (320, 240)
+DEFAULT_EYE_CENTER_F = (320.0, 240.0)
+
 
 class FrameProcessor:
     """Processes a single frame through the pupil detection pipeline
     and returns structured tracking data plus an annotated image."""
+
+    # BGR colors for overlays
+    COLOR_CLASSIC = (255, 50, 50)  # blue
+    COLOR_ENHANCED = (200, 50, 200)  # purple
+    COLOR_REJECTED = (0, 0, 255)  # red
+    COLOR_PUPIL = (20, 255, 255)  # yellow
+    COLOR_GAZE_EXT = (200, 255, 0)  # green
+
+    # Eye center algorithm constants
+    EYE_RADIUS = 202
+    MIN_ANGLE_DIFF = 2.0  # degrees
+    RAY_SAMPLE_COUNT = 5
+    ALPHA_WARMUP = 0.05
+    ALPHA_STABLE = 0.002  # ~500 frame effective window at 120fps
+    WARMUP_RAYS = 50
 
     def __init__(self, settings: TrackingSettings, state: TrackingState) -> None:
         self.settings = settings
@@ -61,7 +79,7 @@ class FrameProcessor:
         thresh_relaxed = mask_outside_square(thresh_relaxed, darkest_point, s.mask_size)
 
         raw_ellipse, raw_conf = self._detect_pupil(
-            thresh_strict, thresh_medium, thresh_relaxed, frame, gray_frame
+            thresh_strict, thresh_medium, thresh_relaxed
         )
         ellipse, confidence = self._validate(raw_ellipse, raw_conf)
 
@@ -107,9 +125,7 @@ class FrameProcessor:
         thresh_strict: np.ndarray,
         thresh_medium: np.ndarray,
         thresh_relaxed: np.ndarray,
-        frame: np.ndarray,
-        gray_frame: np.ndarray,
-    ) -> tuple[Optional[tuple], float]:
+    ) -> tuple[tuple | None, float]:
         """Cascaded thresholding pipeline. Returns (ellipse, confidence)."""
         kernel = np.ones((5, 5), np.uint8)
         image_array = [thresh_relaxed, thresh_medium, thresh_strict]
@@ -123,8 +139,8 @@ class FrameProcessor:
             reduced = filter_contours_by_area_and_return_largest(contours, 1000, 3)
 
             if len(reduced) > 0 and len(reduced[0]) > 5:
-                current_goodness = check_ellipse_goodness(dilated, reduced[0], False)
-                total_pixels = check_contour_pixels(reduced[0], dilated.shape, False)
+                current_goodness = check_ellipse_goodness(dilated, reduced[0])
+                total_pixels = check_contour_pixels(reduced[0], dilated.shape)
                 final_goodness = (
                     current_goodness[0] * total_pixels[0] * total_pixels[0] * total_pixels[1]
                 )
@@ -133,31 +149,27 @@ class FrameProcessor:
                     best_contours = reduced
 
         # Optimize contours
-        optimized = [optimize_contours_by_angle(best_contours, gray_frame)]
+        optimized = [optimize_contours_by_angle(best_contours)]
 
         if optimized and not isinstance(optimized[0], list) and len(optimized[0]) > 5:
             ellipse = cv2.fitEllipse(optimized[0])
-            # Confidence: normalize goodness to 0-1 range
-            # Goodness values typically range 1e3-1e5 for well-fitted ellipses
             confidence = min(1.0, best_goodness / 1e5) if best_goodness > 0 else 0.0
             return ellipse, confidence
 
         return None, 0.0
 
     def _validate(
-        self, ellipse: Optional[tuple], confidence: float
-    ) -> tuple[Optional[tuple], float]:
+        self, ellipse: tuple | None, confidence: float
+    ) -> tuple[tuple | None, float]:
         """Reject blinks and out-of-range detections."""
         if ellipse is None:
             return None, 0.0
         if confidence < self.settings.min_confidence:
             return None, 0.0
-        # Aspect ratio: real pupils <=2.0, blink slits >2.5
         axes = ellipse[1]
         minor, major = min(axes), max(axes)
         if minor > 0 and major / minor > self.settings.max_aspect_ratio:
             return None, 0.0
-        # Pupil bounds: absolute image-coordinate bounding circle
         bounds = self.state.pupil_bounds
         if bounds is not None:
             px, py = float(ellipse[0][0]), float(ellipse[0][1])
@@ -165,20 +177,12 @@ class FrameProcessor:
                 return None, 0.0
         return ellipse, confidence
 
-    # BGR colors
-    COLOR_CLASSIC = (255, 50, 50)  # blue
-    COLOR_ENHANCED = (200, 50, 200)  # purple
-    COLOR_REJECTED = (0, 0, 255)  # red
-    COLOR_PUPIL = (20, 255, 255)  # yellow
-    COLOR_GAZE_EXT = (200, 255, 0)  # green (extended ray beyond pupil)
-    EYE_RADIUS = 202
-
     def _build_tracking(
         self,
         frame: np.ndarray,
-        ellipse: Optional[tuple],
-        rejected_ellipse: Optional[tuple],
-        gaze: Optional[dict],
+        ellipse: tuple | None,
+        rejected_ellipse: tuple | None,
+        gaze: dict | None,
         confidence: float,
     ) -> dict:
         """Draw all overlays and return tracking dict."""
@@ -188,53 +192,31 @@ class FrameProcessor:
 
         tracking: dict = {
             "pupil": None,
-            "eyeCenterClassic": list(orig) if orig != (320, 240) else None,
-            "eyeCenterEnhanced": list(ewma) if ewma != (320, 240) else None,
+            "eyeCenterClassic": list(orig) if orig != DEFAULT_EYE_CENTER else None,
+            "eyeCenterEnhanced": list(ewma) if ewma != DEFAULT_EYE_CENTER else None,
             "gaze": gaze,
             "fps": 0.0,
             "confidence": round(confidence, 3),
             "timestamp": time.time(),
         }
 
-        # --- Classic eye center (blue circle + dot + label top-left of dot) ---
-        if orig != (320, 240):
-            cv2.circle(frame, orig, self.EYE_RADIUS, self.COLOR_CLASSIC, 2)
-            cv2.circle(frame, orig, 6, self.COLOR_CLASSIC, -1)
-            cv2.putText(
-                frame,
-                "Classic",
-                (orig[0] - 55, orig[1] - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.45,
-                self.COLOR_CLASSIC,
-                1,
-            )
+        # Eye center overlays (circle + dot + label)
+        if orig != DEFAULT_EYE_CENTER:
+            self._draw_eye_center(frame, orig, self.COLOR_CLASSIC, "Classic", label_dx=-55)
+        if ewma != DEFAULT_EYE_CENTER:
+            self._draw_eye_center(frame, ewma, self.COLOR_ENHANCED, "Enhanced", label_dx=10)
 
-        # --- Enhanced eye center (purple circle + dot + label top-right of dot) ---
-        if ewma != (320, 240):
-            cv2.circle(frame, ewma, self.EYE_RADIUS, self.COLOR_ENHANCED, 2)
-            cv2.circle(frame, ewma, 6, self.COLOR_ENHANCED, -1)
-            cv2.putText(
-                frame,
-                "Enhanced",
-                (ewma[0] + 10, ewma[1] - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.45,
-                self.COLOR_ENHANCED,
-                1,
-            )
-
-        # --- Pupil bounds (green dashed ellipse) ---
+        # Pupil bounds (green dashed ellipse)
         self._draw_bounds_ellipse(frame)
 
-        # --- Rejected pupil (red ellipse — filtered but still shown) ---
+        # Rejected pupil (red ellipse)
         if rejected_ellipse is not None:
             cv2.ellipse(frame, rejected_ellipse, self.COLOR_REJECTED, 2)
 
         if ellipse is None:
             return tracking
 
-        # --- Valid pupil (yellow ellipse) ---
+        # Valid pupil (yellow ellipse)
         center_xy = (int(ellipse[0][0]), int(ellipse[0][1]))
         tracking["pupil"] = {
             "center": list(center_xy),
@@ -243,12 +225,12 @@ class FrameProcessor:
         }
         cv2.ellipse(frame, ellipse, self.COLOR_PUPIL, 2)
 
-        # --- Gaze line (classic=blue, enhanced=purple, screen=none) ---
+        # Gaze line
         mode = self.settings.mode
         if mode != "screen":
             active = orig if mode == "classic" else ewma
             color = self.COLOR_CLASSIC if mode == "classic" else self.COLOR_ENHANCED
-            if active != (320, 240):
+            if active != DEFAULT_EYE_CENTER:
                 cv2.line(frame, active, center_xy, color, 2)
                 dx = center_xy[0] - active[0]
                 dy = center_xy[1] - active[1]
@@ -257,21 +239,36 @@ class FrameProcessor:
 
         return tracking
 
-    # -- 3D mode helpers --
+    def _draw_eye_center(
+        self,
+        frame: np.ndarray,
+        center: tuple[int, int],
+        color: tuple[int, int, int],
+        label: str,
+        label_dx: int,
+    ) -> None:
+        """Draw eye center circle, dot, and label."""
+        cv2.circle(frame, center, self.EYE_RADIUS, color, 2)
+        cv2.circle(frame, center, 6, color, -1)
+        cv2.putText(
+            frame,
+            label,
+            (center[0] + label_dx, center[1] - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            color,
+            1,
+        )
 
-    MIN_ANGLE_DIFF = 2.0
-    RAY_SAMPLE_COUNT = 5
-    ALPHA_WARMUP = 0.05
-    ALPHA_STABLE = 0.002  # ~500 frame effective window at 120fps
-    WARMUP_RAYS = 50
+    # -- eye center algorithms --
 
-    def _compute_eye_center_ewma(self, frame: np.ndarray) -> tuple[int, int]:
+    def _compute_eye_center_ewma(self, frame: np.ndarray) -> None:
         """Estimate 2D eye center via random 5-ray sampling + EWMA."""
         st = self.state
         h, w = frame.shape[:2]
 
         if len(st.ray_lines) < 2:
-            return (int(st.eye_center_ewma[0]), int(st.eye_center_ewma[1]))
+            return
 
         sample_n = min(self.RAY_SAMPLE_COUNT, len(st.ray_lines))
         selected = random.sample(st.ray_lines, sample_n)
@@ -286,22 +283,20 @@ class FrameProcessor:
                 frame_intersections.append(ix)
 
         if not frame_intersections:
-            return (int(st.eye_center_ewma[0]), int(st.eye_center_ewma[1]))
+            return
 
         avg_x = sum(p[0] for p in frame_intersections) / len(frame_intersections)
         avg_y = sum(p[1] for p in frame_intersections) / len(frame_intersections)
 
         a = self.ALPHA_WARMUP if len(st.ray_lines) < self.WARMUP_RAYS else self.ALPHA_STABLE
 
-        if st.eye_center_ewma == (320.0, 240.0):
+        if st.eye_center_ewma == DEFAULT_EYE_CENTER_F:
             st.eye_center_ewma = (avg_x, avg_y)
         else:
             st.eye_center_ewma = (
                 a * avg_x + (1 - a) * st.eye_center_ewma[0],
                 a * avg_y + (1 - a) * st.eye_center_ewma[1],
             )
-
-        return (int(st.eye_center_ewma[0]), int(st.eye_center_ewma[1]))
 
     def _compute_eye_center_original(self, frame: np.ndarray) -> None:
         """Original Orlosky algorithm: random 5-ray sampling + 1500-intersection
@@ -310,10 +305,10 @@ class FrameProcessor:
         h, w = frame.shape[:2]
         if len(st.ray_lines) < 2:
             return
-        selected = random.sample(st.ray_lines, min(5, len(st.ray_lines)))
+        selected = random.sample(st.ray_lines, min(self.RAY_SAMPLE_COUNT, len(st.ray_lines)))
         for i in range(len(selected) - 1):
             e1, e2 = selected[i], selected[i + 1]
-            if abs(e1[2] - e2[2]) < 2.0:
+            if abs(e1[2] - e2[2]) < self.MIN_ANGLE_DIFF:
                 continue
             ix = self._intersect_ellipse_normals(e1, e2)
             if ix and 0 <= ix[0] < w and 0 <= ix[1] < h:
@@ -333,7 +328,7 @@ class FrameProcessor:
             st.orig_avg = (fx, fy)
 
     @staticmethod
-    def _intersect_ellipse_normals(e1: tuple, e2: tuple) -> Optional[tuple[float, float]]:
+    def _intersect_ellipse_normals(e1: tuple, e2: tuple) -> tuple[float, float] | None:
         """Compute the intersection of two ellipses' minor-axis normals."""
         (cx1, cy1), (_, minor1), angle1 = e1
         (cx2, cy2), (_, minor2), angle2 = e2
@@ -353,8 +348,8 @@ class FrameProcessor:
         t1 = ((cx2 - cx1) * (-dy2) - (cy2 - cy1) * (-dx2)) / det
         return (cx1 + t1 * dx1, cy1 + t1 * dy1)
 
-    def _compute_gaze(self, ellipse: tuple, eye_center: tuple[int, int]) -> Optional[dict]:
-        """Compute 3D gaze vector from pupil and EWMA eye center."""
+    def _compute_gaze(self, ellipse: tuple, eye_center: tuple[int, int]) -> dict | None:
+        """Compute 3D gaze vector from pupil and eye center."""
         cx, cy = int(ellipse[0][0]), int(ellipse[0][1])
         ex, ey = eye_center
         center_3d, direction_3d = _compute_gaze_vector_no_file(cx, cy, ex, ey)
@@ -396,7 +391,7 @@ def _compute_gaze_vector_no_file(
     center_y: int,
     screen_width: int = 640,
     screen_height: int = 480,
-) -> tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+) -> tuple[np.ndarray | None, np.ndarray | None]:
     """Same math as eye_tracker_3d.compute_gaze_vector but returns values
     directly instead of writing to gaze_vector.txt."""
     viewport_width = screen_width

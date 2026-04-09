@@ -89,7 +89,7 @@ def mask_outside_square(image, center, size):
 # ---------------------------------------------------------------------------
 
 
-def optimize_contours_by_angle(contours, image):
+def optimize_contours_by_angle(contours):
     """
     Refine contour points by keeping only those whose local curvature
     points inward (concave toward centroid).
@@ -113,11 +113,9 @@ def optimize_contours_by_angle(contours, image):
         vec1 = prev_point - current_point
         vec2 = next_point - current_point
 
-        with np.errstate(invalid="ignore"):
-            norm_product = np.linalg.norm(vec1) * np.linalg.norm(vec2)
-            if norm_product < 1e-8:
-                continue
-            angle = np.arccos(np.clip(np.dot(vec1, vec2) / norm_product, -1.0, 1.0))
+        norm_product = np.linalg.norm(vec1) * np.linalg.norm(vec2)
+        if norm_product < 1e-8:
+            continue
 
         vec_to_centroid = centroid - current_point
         cos_threshold = np.cos(np.radians(60))
@@ -156,7 +154,7 @@ def filter_contours_by_area_and_return_largest(contours, pixel_thresh, ratio_thr
 # ---------------------------------------------------------------------------
 
 
-def check_contour_pixels(contour, image_shape, debug_mode_on):
+def check_contour_pixels(contour, image_shape):
     """
     Check how many contour pixels fall near a fitted ellipse.
     Returns [absolute_count, ratio, overlap_mask].
@@ -186,7 +184,7 @@ def check_contour_pixels(contour, image_shape, debug_mode_on):
     return [absolute_pixel_total_thick, ratio_under_ellipse, overlap_thin]
 
 
-def check_ellipse_goodness(binary_image, contour, debug_mode_on):
+def check_ellipse_goodness(binary_image, contour):
     """
     Evaluate how well the binary blob matches the fitted ellipse.
     Returns [fill_ratio, 0, skew_ratio].
