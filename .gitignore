@@ -2,9 +2,11 @@
 .venv/
 *.pyc
 __pycache__/
+.ruff_cache/
 
 # EyeTrack config (auto-generated)
 .eye-track-config.json
+.eye-tracking-config.json
 
 # Eye tracker output
 gaze_vector.txt

@@ -4,6 +4,22 @@ Real-time gaze tracking with affordable IR cameras. Runs in the browser, support
 
 Built on OpenCV pupil detection and polynomial gaze mapping, wrapped in a modern web UI with live video, 3D eye visualization, heatmaps, and gaze trails.
 
+https://github.com/user-attachments/assets/8f7f9201-150e-4fcb-ba1e-9ae23bb7a660
+
+---
+
+## 🛒 Hardware
+
+All you need to get started:
+
+- **IR camera** — GC0308 USB infrared camera module (1 for single-eye, 2 for dual-eye)
+- **IR LED** — optional, improves pupil contrast in low light
+- **Glasses frame** — any frame to mount cameras near the eyes
+- **Hot glue gun + glue sticks** — to secure cameras onto the frame
+- **USB cable** — to connect cameras to your computer
+
+That's it. No special boards, no soldering required.
+
 ---
 
 ## ✨ Features
