@@ -20,6 +20,12 @@ All you need to get started:
 
 That's it. No special boards, no soldering required.
 
+<p>
+  <img src="assets/glasses-front.jpeg" width="48%" alt="Glasses with dual IR cameras mounted" />
+  &nbsp;
+  <img src="assets/glasses-closeup.jpeg" width="48%" alt="Close-up of IR camera with LED active" />
+</p>
+
 ---
 
 ## ✨ Features

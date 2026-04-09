@@ -20,6 +20,12 @@ https://github.com/user-attachments/assets/8f7f9201-150e-4fcb-ba1e-9ae23bb7a660
 
 就这些，不需要额外的开发板，不需要焊接。
 
+<p>
+  <img src="assets/glasses-front.jpeg" width="48%" alt="眼镜框正面，双摄像头已安装" />
+  &nbsp;
+  <img src="assets/glasses-closeup.jpeg" width="48%" alt="红外摄像头近距离特写，LED 工作中" />
+</p>
+
 ---
 
 ## ✨ 功能亮点
