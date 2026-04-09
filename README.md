@@ -21,9 +21,9 @@ All you need to get started:
 That's it. No special boards, no soldering required.
 
 <p>
-  <img src="assets/glasses-front.jpeg" width="48%" alt="Glasses with dual IR cameras mounted" />
+  <img src="assets/glasses-front.jpeg" width="48%" alt="Inner side of glasses showing two IR cameras facing the eyes" />
   &nbsp;
-  <img src="assets/glasses-closeup.jpeg" width="48%" alt="Close-up of IR camera with LED active" />
+  <img src="assets/glasses-closeup.jpeg" width="48%" alt="Close-up of IR camera module with LED active" />
 </p>
 
 ---
