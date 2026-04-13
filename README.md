@@ -138,7 +138,6 @@ pnpm dev          # Dev server at http://localhost:5173
 │           ├── hooks/          # useWebSocket, useTrackingData, useTheme, useLatency
 │           ├── lib/            # Calibration math, audio feedback, backend URL
 │           └── types/          # TypeScript interfaces
-├── docs/                       # Session logs and design docs
 └── pyproject.toml              # Python project config
 ```
 
@@ -179,15 +178,6 @@ pnpm dev          # Dev server at http://localhost:5173
 | Linux | V4L2 | Supported |
 
 Camera detection on macOS uses `system_profiler` to avoid triggering iPhone Continuity Camera.
-
----
-
-## 📖 Documentation
-
-Detailed session logs with design decisions, trade-offs, and implementation notes:
-
-- [2026-04-05 — Web platform build, algorithm optimization, architecture redesign](docs/2026-04-05-session-log.md)
-- [2026-04-08 — Dual-eye tracking, camera binding, performance, theme system](docs/2026-04-08-session-log.md)
 
 ---
 

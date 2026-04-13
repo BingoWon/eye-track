@@ -136,7 +136,6 @@ pnpm dev          # 开发服务器 http://localhost:5173
 │           ├── hooks/          # useWebSocket、useTrackingData、useTheme
 │           ├── lib/            # 校准数学、音频反馈
 │           └── types/          # TypeScript 类型定义
-├── docs/                       # 开发日志与设计文档
 └── pyproject.toml              # Python 项目配置
 ```
 
@@ -177,15 +176,6 @@ pnpm dev          # 开发服务器 http://localhost:5173
 | Linux | V4L2 | 已支持 |
 
 macOS 上使用 `system_profiler` 检测摄像头，避免触发 iPhone 连续互通相机。
-
----
-
-## 📖 开发文档
-
-详细的开发日志，记录了设计决策、权衡取舍和实现细节：
-
-- [2026-04-05 — Web 平台搭建、算法优化、架构重设计](docs/2026-04-05-session-log.md)
-- [2026-04-08 — 双目追踪、摄像头绑定、性能优化、主题系统](docs/2026-04-08-session-log.md)
 
 ---
 
