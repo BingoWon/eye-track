@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalibrationWizard } from "./components/CalibrationWizard";
 import { CameraSelector, type TrackerSelection } from "./components/CameraSelector";
+import { ConnectionSetup } from "./components/ConnectionSetup";
 import { ControlPanel } from "./components/ControlPanel";
 import { EyeModel3D } from "./components/EyeModel3D";
 import { GazeCursor } from "./components/GazeCursor";
@@ -13,6 +14,7 @@ import { useLatency } from "./hooks/useLatency";
 import { useTheme } from "./hooks/useTheme";
 import { useTrackingData } from "./hooks/useTrackingData";
 import { useWebSocket } from "./hooks/useWebSocket";
+import { apiUrl, wsUrl } from "./lib/backend";
 import { type CalibrationResult, applyCalibration } from "./lib/calibration";
 import { DEFAULT_SETTINGS } from "./types/tracking";
 import type {
@@ -36,6 +38,7 @@ interface TrackerInfo {
 
 export default function App() {
 	const { theme, toggleTheme } = useTheme();
+	const [backendReady, setBackendReady] = useState(false);
 	const [trackerIds, setTrackerIds] = useState<string[]>([]);
 	const [trackerEyes, setTrackerEyes] = useState<Map<string, EyeSide>>(new Map());
 	const [initialLoading, setInitialLoading] = useState(true);
@@ -64,9 +67,8 @@ export default function App() {
 		[handleFrame, recordFrame],
 	);
 
-	const wsUrl = `ws://${window.location.hostname}:${window.location.port || "5173"}/ws`;
 	const { status: connectionStatus, send } = useWebSocket({
-		url: wsUrl,
+		url: wsUrl(),
 		onFrame,
 	});
 
@@ -75,7 +77,7 @@ export default function App() {
 		if (connectionStatus !== "connected") return;
 		(async () => {
 			try {
-				const res = await fetch("/api/trackers");
+				const res = await fetch(apiUrl("/api/trackers"));
 				const data: { trackers: TrackerInfo[] } = await res.json();
 				const list = data.trackers ?? [];
 				const ids = list.map((t) => t.id);
@@ -96,7 +98,7 @@ export default function App() {
 				}
 				if (ids.length > 0) {
 					// Ensure broadcast is running
-					fetch("/api/pause", {
+					fetch(apiUrl("/api/pause"), {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({ paused: false }),
@@ -164,7 +166,7 @@ export default function App() {
 	// Pause
 	const setPausedAndSync = useCallback((newPaused: boolean) => {
 		setPaused(newPaused);
-		fetch("/api/pause", {
+		fetch(apiUrl("/api/pause"), {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ paused: newPaused }),
@@ -201,7 +203,7 @@ export default function App() {
 			const merged = { ...settings, ...newSettings };
 			setSettings(merged);
 			send({ type: "settings", ...merged });
-			fetch("/api/settings", {
+			fetch(apiUrl("/api/settings"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(merged),
@@ -219,7 +221,7 @@ export default function App() {
 			clearHistory();
 			// Persist each tracker's calibration to backend
 			for (const [id, result] of results) {
-				fetch(`/api/trackers/${id}/gaze-calibrate`, {
+				fetch(apiUrl(`/api/trackers/${id}/gaze-calibrate`), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(result),
@@ -237,14 +239,14 @@ export default function App() {
 		setCalibrations(new Map());
 		setShowGazeCursor(false);
 		for (const id of trackerIds) {
-			fetch(`/api/trackers/${id}/gaze-calibrate`, { method: "DELETE" }).catch(() => {});
+			fetch(apiUrl(`/api/trackers/${id}/gaze-calibrate`), { method: "DELETE" }).catch(() => {});
 		}
 	}, [trackerIds]);
 
 	const clearRangeCalibration = useCallback(() => {
 		setRangeCalibrated(new Set());
 		for (const id of trackerIds) {
-			fetch(`/api/trackers/${id}/range-calibrate`, { method: "DELETE" }).catch(() => {});
+			fetch(apiUrl(`/api/trackers/${id}/range-calibrate`), { method: "DELETE" }).catch(() => {});
 		}
 	}, [trackerIds]);
 
@@ -255,7 +257,7 @@ export default function App() {
 		clearHistory();
 		updateSettings(DEFAULT_SETTINGS);
 		for (const id of trackerIds) {
-			fetch(`/api/trackers/${id}/range-calibrate`, { method: "DELETE" }).catch(() => {});
+			fetch(apiUrl(`/api/trackers/${id}/range-calibrate`), { method: "DELETE" }).catch(() => {});
 		}
 	}, [clearHistory, updateSettings, trackerIds]);
 
@@ -274,6 +276,9 @@ export default function App() {
 		setShowCameraSelector(false);
 		setPaused(false);
 	}, []);
+
+	// Gate: ensure backend is reachable before proceeding
+	if (!backendReady) return <ConnectionSetup onConnected={() => setBackendReady(true)} />;
 
 	// Wait for initial backend sync before deciding what to show
 	if (initialLoading) return null;

@@ -3,6 +3,7 @@ import { Check, Eye, ScanEye } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TrackerState } from "../hooks/useTrackingData";
 import { playComplete, playCountdownTick, playTick } from "../lib/audio";
+import { apiUrl } from "../lib/backend";
 
 interface RangeCalibrationWizardProps {
 	isOpen: boolean;
@@ -106,7 +107,7 @@ export function RangeCalibrationWizard({
 	useEffect(() => {
 		if (stage !== "collecting") return;
 		for (const id of trackerIds) {
-			fetch(`/api/trackers/${id}/range-calibrate`, { method: "DELETE" }).catch(() => {});
+			fetch(apiUrl(`/api/trackers/${id}/range-calibrate`), { method: "DELETE" }).catch(() => {});
 		}
 	}, [stage, trackerIds]);
 
@@ -140,7 +141,7 @@ export function RangeCalibrationWizard({
 					anySuccess = true;
 					lastRx = Math.max(lastRx, bounds.rx);
 					lastRy = Math.max(lastRy, bounds.ry);
-					fetch(`/api/trackers/${id}/range-calibrate`, {
+					fetch(apiUrl(`/api/trackers/${id}/range-calibrate`), {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify(bounds),

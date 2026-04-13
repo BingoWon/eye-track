@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, ChevronRight, FlipVertical2, Loader2, RefreshCw, Wifi } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiUrl } from "../lib/backend";
 import { SOURCE_H, SOURCE_W } from "../types/tracking";
 import type { EyeSide } from "../types/tracking";
 
@@ -60,10 +61,10 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 		setLoadingPreviews(new Set());
 		setFailedPreviews(new Map());
 		setCameras([]);
-		await fetch("/api/cameras/enter-selection", { method: "POST" }).catch(() => {});
-		await fetch("/api/cameras/preview", { method: "DELETE" }).catch(() => {});
+		await fetch(apiUrl("/api/cameras/enter-selection"), { method: "POST" }).catch(() => {});
+		await fetch(apiUrl("/api/cameras/preview"), { method: "DELETE" }).catch(() => {});
 		try {
-			const res = await fetch("/api/cameras");
+			const res = await fetch(apiUrl("/api/cameras"));
 			const data = await res.json();
 			setServerReachable(true);
 			const cams: CameraInfo[] = (
@@ -105,7 +106,7 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 			if (failures >= MAX_RETRIES) return;
 			const rot = rotationsRef.current.get(idx) ?? 0;
 			try {
-				const res = await fetch(`/api/cameras/${idx}/preview?rotation=${rot}`, {
+				const res = await fetch(apiUrl(`/api/cameras/${idx}/preview?rotation=${rot}`), {
 					signal: abortController.signal,
 				});
 				if (abortController.signal.aborted) return;
@@ -155,7 +156,7 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 
 		return () => {
 			abortController.abort();
-			fetch("/api/cameras/preview", { method: "DELETE" }).catch(() => {});
+			fetch(apiUrl("/api/cameras/preview"), { method: "DELETE" }).catch(() => {});
 		};
 	}, [detecting, cameras.length, tabVisible]);
 
@@ -220,13 +221,13 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 		setConnecting(true);
 		try {
 			// Release all preview cameras and wait for OS to fully release handles
-			await fetch("/api/cameras/preview", { method: "DELETE" });
+			await fetch(apiUrl("/api/cameras/preview"), { method: "DELETE" });
 			await new Promise((r) => setTimeout(r, 500));
 			const selections: TrackerSelection[] = [];
 			for (const sel of selected) {
 				const cam = cameras.find((c) => c.index === sel.index);
 				const rotation = rotations.get(sel.index) ?? 0;
-				const res = await fetch("/api/trackers", {
+				const res = await fetch(apiUrl("/api/trackers"), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
@@ -245,7 +246,7 @@ export function CameraSelector({ onSelect }: CameraSelectorProps) {
 				}
 			}
 			if (selections.length > 0) {
-				await fetch("/api/pause", {
+				await fetch(apiUrl("/api/pause"), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ paused: false }),
