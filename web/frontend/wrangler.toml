@@ -2,5 +2,5 @@ name = "eyetrack"
 compatibility_date = "2026-04-13"
 
 [assets]
-directory = "web/frontend/dist"
+directory = "dist"
 not_found_handling = "single-page-application"
