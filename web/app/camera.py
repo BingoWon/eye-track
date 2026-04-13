@@ -14,7 +14,7 @@ import numpy as np
 
 from src.pupil_detector import _get_capture_backend, crop_to_aspect_ratio
 
-logger = logging.getLogger("eye-tracker")
+logger = logging.getLogger("eyetrack")
 
 
 def detect_cameras_safe() -> list[dict]:

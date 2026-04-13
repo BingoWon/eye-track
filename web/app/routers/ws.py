@@ -9,7 +9,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from web.app.state import registry, settings, ws_clients
 
-logger = logging.getLogger("eye-tracker")
+logger = logging.getLogger("eyetrack")
 
 router = APIRouter()
 

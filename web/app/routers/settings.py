@@ -11,7 +11,7 @@ from web.app import state
 from web.app.persistence import VALID_MODES, persist_current_state
 from web.app.state import registry, settings, ws_clients
 
-logger = logging.getLogger("eye-tracker")
+logger = logging.getLogger("eyetrack")
 
 router = APIRouter(prefix="/api", tags=["settings"])
 

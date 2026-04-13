@@ -21,7 +21,7 @@ from src.pupil_detector import (
 )
 from web.app.state import TrackingSettings, TrackingState
 
-logger = logging.getLogger("eye-tracker")
+logger = logging.getLogger("eyetrack")
 
 # Frame defaults (must match crop_to_aspect_ratio output)
 DEFAULT_EYE_CENTER = (320, 240)

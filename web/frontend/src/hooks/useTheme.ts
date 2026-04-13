@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 export type Theme = "dark" | "light";
 
-const STORAGE_KEY = "eye-track-theme";
+const STORAGE_KEY = "eyetrack-theme";
 
 function getInitialTheme(): Theme {
 	const saved = localStorage.getItem(STORAGE_KEY);

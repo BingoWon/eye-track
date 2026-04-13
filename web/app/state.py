@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from fastapi import WebSocket
 
-logger = logging.getLogger("eye-tracker")
+logger = logging.getLogger("eyetrack")
 
 
 # ---------------------------------------------------------------------------

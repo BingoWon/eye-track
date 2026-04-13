@@ -5,6 +5,7 @@ __pycache__/
 .ruff_cache/
 
 # EyeTrack config (auto-generated)
+.eyetrack-config.json
 .eye-track-config.json
 .eye-tracking-config.json
 

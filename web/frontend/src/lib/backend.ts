@@ -1,4 +1,4 @@
-const STORAGE_KEY = "eyetrack-backend-url";
+const STORAGE_KEY = "eyetrack-backend";
 const DEFAULT_URL = "http://localhost:8100";
 
 /** Read the persisted backend base URL (no trailing slash). */

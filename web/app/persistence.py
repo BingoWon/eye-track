@@ -8,9 +8,9 @@ from pathlib import Path
 
 from web.app.state import PupilBounds, TrackingSettings
 
-logger = logging.getLogger("eye-tracker")
+logger = logging.getLogger("eyetrack")
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / ".eye-track-config.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / ".eyetrack-config.json"
 
 VALID_MODES = ("classic", "enhanced", "screen")
 

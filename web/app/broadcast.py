@@ -17,7 +17,7 @@ from web.app.state import (
     ws_clients,
 )
 
-logger = logging.getLogger("eye-tracker")
+logger = logging.getLogger("eyetrack")
 
 
 async def broadcast_loop() -> None:
