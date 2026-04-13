@@ -152,7 +152,7 @@ export function ConnectionSetup({ onConnected }: ConnectionSetupProps) {
 										Start the backend with:
 									</p>
 									<code className="text-[11px] font-mono bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] px-3 py-2 rounded-lg border border-[var(--color-border)]/40 select-all">
-										python -m web.app.main
+										python web/server.py
 									</code>
 								</div>
 							</form>
