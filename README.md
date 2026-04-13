@@ -94,16 +94,13 @@ graph TB
 
 ### Prerequisites
 
-- Python 3.10+
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
 - Node.js 18+ with pnpm
 - USB IR camera (tested with GC0308)
 
 ### Quick Start
 
 ```bash
-# Install Python dependencies
-uv sync
-
 # Build the frontend
 cd web/frontend
 pnpm install
@@ -111,7 +108,7 @@ pnpm build
 cd ../..
 
 # Start the server
-python web/server.py
+uv run eyetrack
 ```
 
 Open `http://localhost:8100` in your browser.

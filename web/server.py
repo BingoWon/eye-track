@@ -1,8 +1,7 @@
-"""Entry point for the eye tracking web server.
+"""Entry point for the EyeTrack web server.
 
 Usage:
-    python web/server.py
-    uv run uvicorn web.server:app --host 0.0.0.0 --port 8100 --reload --ws wsproto
+    uv run eyetrack
 """
 
 import sys
@@ -12,7 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from web.app.main import app  # noqa: E402, F401
 
-if __name__ == "__main__":
+
+def main():
     import uvicorn
 
     uvicorn.run(
@@ -23,3 +23,7 @@ if __name__ == "__main__":
         log_level="info",
         ws="wsproto",
     )
+
+
+if __name__ == "__main__":
+    main()
