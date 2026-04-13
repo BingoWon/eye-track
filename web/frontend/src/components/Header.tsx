@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
+	Camera,
 	Crosshair,
 	Eye,
 	Flame,
@@ -129,15 +130,43 @@ function latencyColor(ms: number): string {
 	return "var(--color-danger)";
 }
 
-/* ── Backend popover ── */
+function LatencyIndicator({ latency }: { latency: LatencyStats }) {
+	const active = latency.frameInterval > 0;
+	const items = [
+		{ label: "Proc", value: latency.processing, tip: "Backend processing (capture → encode)" },
+		{ label: "Net", value: latency.network, tip: "Network transport jitter" },
+		{ label: "Intv", value: latency.frameInterval, tip: "Frame interval at browser" },
+	];
+	return (
+		<div className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-[var(--color-border)]/40 bg-[var(--color-bg-primary)]/40">
+			{items.map(({ label, value, tip }) => (
+				<div key={label} className="flex items-center gap-1" title={tip}>
+					<span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
+						{label}
+					</span>
+					<span
+						className="text-[11px] font-semibold font-mono min-w-[28px] text-right"
+						style={{
+							color: active ? latencyColor(value) : "var(--color-text-muted)",
+							fontFeatureSettings: '"tnum"',
+						}}
+					>
+						{active ? `${Math.round(value)}` : "\u2014"}
+					</span>
+					<span className="text-[9px] text-[var(--color-text-muted)]">ms</span>
+				</div>
+			))}
+		</div>
+	);
+}
 
-function BackendPopover({
+/* ── Backend selector popover ── */
+
+function BackendSelector({
 	connectionStatus,
-	latency,
 	onChangeBackend,
 }: {
 	connectionStatus: ConnectionStatus;
-	latency: LatencyStats;
 	onChangeBackend: () => void;
 }) {
 	const [open, setOpen] = useState(false);
@@ -146,7 +175,6 @@ function BackendPopover({
 	const [error, setError] = useState<string | null>(null);
 	const popoverRef = useRef<HTMLDivElement>(null);
 
-	// Close on outside click
 	useEffect(() => {
 		if (!open) return;
 		const handler = (e: MouseEvent) => {
@@ -158,7 +186,6 @@ function BackendPopover({
 		return () => document.removeEventListener("mousedown", handler);
 	}, [open]);
 
-	// Reset form when opening
 	useEffect(() => {
 		if (open) {
 			setUrl(getBackendUrl());
@@ -195,54 +222,27 @@ function BackendPopover({
 		handleConnect();
 	};
 
-	const active = latency.frameInterval > 0;
 	const isConnected = connectionStatus === "connected";
-
-	const latencyItems = [
-		{ label: "Proc", value: latency.processing, tip: "Backend processing (capture → encode)" },
-		{ label: "Net", value: latency.network, tip: "Network transport jitter" },
-		{ label: "Intv", value: latency.frameInterval, tip: "Frame interval at browser" },
-	];
 
 	return (
 		<div className="relative" ref={popoverRef}>
-			{/* Trigger: status dot + latency */}
 			<button
 				type="button"
 				onClick={() => setOpen((v) => !v)}
-				className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all duration-200 cursor-pointer ${
-					open
-						? "bg-[var(--color-bg-card-hover)] border-[var(--color-border)]"
-						: "border-[var(--color-border)]/40 bg-[var(--color-bg-primary)]/40 hover:border-[var(--color-border)]/60"
+				className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border cursor-pointer transition-colors ${
+					isConnected
+						? "bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/20 hover:bg-[var(--color-success)]/15"
+						: "bg-[var(--color-danger)]/10 text-[var(--color-danger)] border-[var(--color-danger)]/20 hover:bg-[var(--color-danger)]/15"
 				}`}
 			>
-				{/* Status dot */}
 				<span
-					className="w-2 h-2 rounded-full shrink-0"
+					className="w-1.5 h-1.5 rounded-full shrink-0"
 					style={{ backgroundColor: statusColor(connectionStatus) }}
 				/>
-
-				{/* Latency numbers */}
-				{latencyItems.map(({ label, value, tip }) => (
-					<div key={label} className="flex items-center gap-1" title={tip}>
-						<span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
-							{label}
-						</span>
-						<span
-							className="text-[11px] font-semibold font-mono min-w-[28px] text-right"
-							style={{
-								color: active ? latencyColor(value) : "var(--color-text-muted)",
-								fontFeatureSettings: '"tnum"',
-							}}
-						>
-							{active ? `${Math.round(value)}` : "\u2014"}
-						</span>
-						<span className="text-[9px] text-[var(--color-text-muted)]">ms</span>
-					</div>
-				))}
+				<Server className="w-3 h-3" />
+				Backend
 			</button>
 
-			{/* Popover */}
 			<AnimatePresence>
 				{open && (
 					<motion.div
@@ -250,9 +250,9 @@ function BackendPopover({
 						animate={{ opacity: 1, y: 0, scale: 1 }}
 						exit={{ opacity: 0, y: 4, scale: 0.97 }}
 						transition={{ duration: 0.15 }}
-						className="absolute top-full right-0 mt-2 w-80 glass rounded-xl border border-[var(--color-border)]/60 p-4 shadow-lg z-[100]"
+						className="absolute top-full left-0 mt-2 w-80 glass rounded-xl border border-[var(--color-border)]/60 p-4 shadow-lg z-[100]"
 					>
-						{/* Status row */}
+						{/* Status */}
 						<div className="flex items-center gap-2 mb-3">
 							<span
 								className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -274,39 +274,34 @@ function BackendPopover({
 
 						{/* URL form */}
 						<form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-							<label className="flex flex-col gap-1">
-								<span className="text-[10px] font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-									Backend URL
-								</span>
-								<div className="flex items-center gap-2">
-									<div className="relative flex-1">
-										<Server className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
-										<input
-											type="text"
-											value={url}
-											onChange={(e) => {
-												setUrl(e.target.value);
-												setError(null);
-											}}
-											placeholder="http://localhost:8100"
-											className="w-full pl-8 pr-3 py-2 rounded-lg text-[12px] font-mono bg-[var(--color-bg-primary)] border border-[var(--color-border)]/60 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]/50 focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all"
-											disabled={testing}
-										/>
-									</div>
-									<button
-										type="submit"
-										disabled={testing || !url.trim()}
-										className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20 hover:bg-[var(--color-accent)]/15 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-									>
-										{testing ? (
-											<Loader2 className="w-3.5 h-3.5 animate-spin" />
-										) : (
-											<Wifi className="w-3.5 h-3.5" />
-										)}
-										Connect
-									</button>
+							<div className="flex items-center gap-2">
+								<div className="relative flex-1">
+									<Server className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+									<input
+										type="text"
+										value={url}
+										onChange={(e) => {
+											setUrl(e.target.value);
+											setError(null);
+										}}
+										placeholder="http://localhost:8100"
+										className="w-full pl-8 pr-3 py-2 rounded-lg text-[12px] font-mono bg-[var(--color-bg-primary)] border border-[var(--color-border)]/60 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]/50 focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all"
+										disabled={testing}
+									/>
 								</div>
-							</label>
+								<button
+									type="submit"
+									disabled={testing || !url.trim()}
+									className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20 hover:bg-[var(--color-accent)]/15 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+								>
+									{testing ? (
+										<Loader2 className="w-3.5 h-3.5 animate-spin" />
+									) : (
+										<Wifi className="w-3.5 h-3.5" />
+									)}
+									Connect
+								</button>
+							</div>
 							{error && <p className="text-[10px] text-[var(--color-danger)] px-0.5">{error}</p>}
 						</form>
 					</motion.div>
@@ -369,8 +364,8 @@ export function Header({
 				}}
 			/>
 
-			{/* Left: Logo */}
-			<div className="flex items-center gap-3 min-w-[200px]">
+			{/* Left: Logo + Backend + Camera */}
+			<div className="flex items-center gap-3">
 				<div className="w-8 h-8 rounded-lg bg-[var(--color-accent)]/8 flex items-center justify-center border border-[var(--color-accent)]/10">
 					<Eye className="w-[18px] h-[18px] text-[var(--color-accent)]" />
 				</div>
@@ -382,13 +377,19 @@ export function Header({
 						Gaze Tracker
 					</span>
 				</div>
+
+				<span className="w-px h-5 bg-[var(--color-border)]/40 mx-0.5" />
+
+				<BackendSelector connectionStatus={connectionStatus} onChangeBackend={onChangeBackend} />
+
 				{trackerCount > 0 && (
 					<button
 						type="button"
 						onClick={onChangeCameraClick}
-						className="ml-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20 cursor-pointer hover:bg-[var(--color-accent)]/15 transition-colors"
+						className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20 cursor-pointer hover:bg-[var(--color-accent)]/15 transition-colors"
 					>
-						{trackerCount} {trackerCount === 1 ? "Camera" : "Cameras"}
+						<Camera className="w-3 h-3" />
+						Camera
 					</button>
 				)}
 			</div>
@@ -467,7 +468,7 @@ export function Header({
 				</div>
 			</div>
 
-			{/* Right: Actions + Theme + Backend */}
+			{/* Right: Actions + Theme + Latency */}
 			<div className="flex items-center gap-2 justify-end">
 				<HeaderButton
 					icon={paused ? Play : Pause}
@@ -538,12 +539,8 @@ export function Header({
 					{theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
 				</button>
 
-				{/* Backend: status + latency + popover */}
-				<BackendPopover
-					connectionStatus={connectionStatus}
-					latency={latency}
-					onChangeBackend={onChangeBackend}
-				/>
+				{/* Latency metrics */}
+				<LatencyIndicator latency={latency} />
 			</div>
 		</header>
 	);
