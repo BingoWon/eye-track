@@ -4,7 +4,7 @@
 
 底层采用 OpenCV 瞳孔检测与多项式注视映射，上层是现代化 Web 界面——实时视频、3D 眼球模型、热力图、注视轨迹，一应俱全。
 
-https://thebinwang.com/eyetrack-demo.mp4
+https://github.com/user-attachments/assets/438654cc-766c-421d-96cb-03263c65248f
 
 ---
 
@@ -92,12 +92,7 @@ graph TB
 
 ## 🚀 快速开始
 
-### 环境要求
-
-- [uv](https://docs.astral.sh/uv/)（Python 包管理器）
-- USB 红外摄像头（已测试 GC0308）
-
-### 快速开始
+安装 [uv](https://docs.astral.sh/uv/)，然后：
 
 ```bash
 uv run eyetrack
@@ -105,7 +100,7 @@ uv run eyetrack
 
 浏览器打开 [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com)，前端会自动连接本地后端。
 
-> 也可以自行构建前端用于离线使用：
+> **自行构建前端**用于离线使用：
 > ```bash
 > cd web/frontend && pnpm install && pnpm build && cd ../..
 > uv run eyetrack    # 打开 http://localhost:8100
@@ -113,15 +108,11 @@ uv run eyetrack
 
 ### 开发
 
-前端热更新开发：
-
 ```bash
 cd web/frontend
 pnpm install
 pnpm dev          # 开发服务器 http://localhost:5173
 ```
-
-然后访问 `http://localhost:8100`。
 
 ---
 

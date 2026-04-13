@@ -4,7 +4,7 @@ Real-time gaze tracking with affordable IR cameras. Runs in the browser, support
 
 Built on OpenCV pupil detection and polynomial gaze mapping, wrapped in a modern web UI with live video, 3D eye visualization, heatmaps, and gaze trails.
 
-https://thebinwang.com/eyetrack-demo.mp4
+https://github.com/user-attachments/assets/438654cc-766c-421d-96cb-03263c65248f
 
 ---
 
@@ -40,6 +40,8 @@ That's it. No special boards, no soldering required.
 - **Heatmap & trail** — fullscreen gaze visualizations with theme-aware rendering
 - **Camera binding** — identifies cameras by hardware ID, survives reboots
 - **Dark / light theme** — system-aware with manual toggle
+- **Latency metrics** — real-time processing, network, and frame interval monitoring in the header
+- **Hosted frontend** — [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com), no build step needed
 - **Persistent config** — all settings, calibrations, and camera assignments saved to disk
 
 ---
@@ -92,12 +94,7 @@ graph TB
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- [uv](https://docs.astral.sh/uv/) (Python package manager)
-- USB IR camera (tested with GC0308)
-
-### Quick Start
+Install [uv](https://docs.astral.sh/uv/), then:
 
 ```bash
 uv run eyetrack
@@ -105,7 +102,7 @@ uv run eyetrack
 
 Open [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com) — the frontend connects to your local backend automatically.
 
-> You can also self-host the frontend for offline use:
+> **Self-host the frontend** for offline use:
 > ```bash
 > cd web/frontend && pnpm install && pnpm build && cd ../..
 > uv run eyetrack    # Open http://localhost:8100
@@ -113,15 +110,11 @@ Open [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com) — the frontend
 
 ### Development
 
-To develop the frontend with hot reload:
-
 ```bash
 cd web/frontend
 pnpm install
 pnpm dev          # Dev server at http://localhost:5173
 ```
-
-Then visit `http://localhost:8100`.
 
 ---
 
@@ -142,8 +135,8 @@ Then visit `http://localhost:8100`.
 │   └── frontend/               # React SPA
 │       └── src/
 │           ├── components/     # VideoFeed, EyeModel3D, CalibrationWizard, etc.
-│           ├── hooks/          # useWebSocket, useTrackingData, useTheme
-│           ├── lib/            # Calibration math, audio feedback
+│           ├── hooks/          # useWebSocket, useTrackingData, useTheme, useLatency
+│           ├── lib/            # Calibration math, audio feedback, backend URL
 │           └── types/          # TypeScript interfaces
 ├── docs/                       # Session logs and design docs
 └── pyproject.toml              # Python project config
