@@ -45,6 +45,8 @@ async def broadcast_loop() -> None:
                 if frame is None:
                     continue
 
+                t_capture = time.monotonic()
+
                 # Apply 180° rotation if camera is mounted upside-down
                 if cam.rotation == 180:
                     frame = cv2.rotate(frame, cv2.ROTATE_180)
@@ -64,14 +66,20 @@ async def broadcast_loop() -> None:
                     "cameraIndex": cam.camera_index,
                     "image": b64_image,
                     "tracking": tracking,
+                    "tCapture": t_capture,
                 }
                 camera_payloads.append(payload)
 
             if camera_payloads:
+                t_send = time.monotonic()
+                # Attach timing: processing = tSend - tCapture per tracker
+                for p in camera_payloads:
+                    p["tProcessing"] = round((t_send - p.pop("tCapture")) * 1000, 2)
                 message = json.dumps(
                     {
                         "type": "frame",
                         "trackers": camera_payloads,
+                        "tSend": t_send,
                     }
                 )
 

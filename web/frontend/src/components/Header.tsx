@@ -14,6 +14,7 @@ import {
 	Sun,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { LatencyStats } from "../hooks/useLatency";
 import type { Theme } from "../hooks/useTheme";
 import type { CalibrationResult } from "../lib/calibration";
 import type { ConnectionStatus, TrackingMode, ViewMode } from "../types/tracking";
@@ -27,6 +28,7 @@ interface HeaderProps {
 	paused: boolean;
 	trackerCount: number;
 	rangeCalibrated: boolean;
+	latency: LatencyStats;
 	onCalibrateClick: () => void;
 	onClearCalibration: () => void;
 	onRangeCalibrateClick: () => void;
@@ -114,6 +116,44 @@ function HeaderButton({
 	);
 }
 
+function latencyColor(ms: number): string {
+	if (ms <= 0) return "var(--color-text-muted)";
+	if (ms < 16) return "var(--color-success)";
+	if (ms < 33) return "var(--color-text-secondary)";
+	if (ms < 80) return "var(--color-warning)";
+	return "var(--color-danger)";
+}
+
+function LatencyIndicator({ latency }: { latency: LatencyStats }) {
+	const active = latency.frameInterval > 0;
+	const items = [
+		{ label: "Proc", value: latency.processing, tip: "Backend processing (capture → encode)" },
+		{ label: "Net", value: latency.network, tip: "Network transport jitter" },
+		{ label: "Intv", value: latency.frameInterval, tip: "Frame interval at browser" },
+	];
+	return (
+		<div className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-[var(--color-border)]/40 bg-[var(--color-bg-primary)]/40">
+			{items.map(({ label, value, tip }) => (
+				<div key={label} className="flex items-center gap-1" title={tip}>
+					<span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
+						{label}
+					</span>
+					<span
+						className="text-[11px] font-semibold font-mono min-w-[32px] text-right"
+						style={{
+							color: active ? latencyColor(value) : "var(--color-text-muted)",
+							fontFeatureSettings: '"tnum"',
+						}}
+					>
+						{active ? `${Math.round(value)}` : "\u2014"}
+					</span>
+					<span className="text-[9px] text-[var(--color-text-muted)]">ms</span>
+				</div>
+			))}
+		</div>
+	);
+}
+
 const STATUS_LABELS: Record<ConnectionStatus, string> = {
 	connected: "Connected",
 	connecting: "Connecting",
@@ -130,6 +170,7 @@ export function Header({
 	paused,
 	trackerCount,
 	rangeCalibrated,
+	latency,
 	onCalibrateClick,
 	onClearCalibration,
 	onRangeCalibrateClick,
@@ -271,7 +312,7 @@ export function Header({
 			</div>
 
 			{/* Right: Actions + Theme + Connection */}
-			<div className="flex items-center gap-2 min-w-[340px] justify-end">
+			<div className="flex items-center gap-2 justify-end">
 				<HeaderButton
 					icon={paused ? Play : Pause}
 					label={paused ? "Resume" : "Pause"}
@@ -328,6 +369,10 @@ export function Header({
 					active={!!calibration && showGazeCursor}
 				/>
 				<HeaderButton icon={RotateCcw} label="Reset" onClick={onResetAll} />
+
+				<span className="w-px h-5 bg-[var(--color-border)]/40 mx-0.5" />
+
+				<LatencyIndicator latency={latency} />
 
 				{/* Theme toggle */}
 				<button

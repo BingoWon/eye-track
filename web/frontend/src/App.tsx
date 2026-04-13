@@ -9,12 +9,20 @@ import { GazeTrail } from "./components/GazeTrail";
 import { Header } from "./components/Header";
 import { RangeCalibrationWizard } from "./components/RangeCalibrationWizard";
 import { VideoFeed } from "./components/VideoFeed";
+import { useLatency } from "./hooks/useLatency";
 import { useTheme } from "./hooks/useTheme";
 import { useTrackingData } from "./hooks/useTrackingData";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { type CalibrationResult, applyCalibration } from "./lib/calibration";
 import { DEFAULT_SETTINGS } from "./types/tracking";
-import type { ActiveWizard, EyeSide, Settings, TrackingMode, ViewMode } from "./types/tracking";
+import type {
+	ActiveWizard,
+	EyeSide,
+	Settings,
+	TrackerFrame,
+	TrackingMode,
+	ViewMode,
+} from "./types/tracking";
 
 interface TrackerInfo {
 	id: string;
@@ -44,11 +52,22 @@ export default function App() {
 	const pausedBeforeCalibrationRef = useRef(false);
 	const { trackers, history, historyVersion, handleFrame, pushGazePoint, clearHistory } =
 		useTrackingData();
+	const { latency, recordFrame } = useLatency();
+
+	const onFrame = useCallback(
+		(frames: TrackerFrame[], tSend?: number) => {
+			handleFrame(frames);
+			// Use max processing time across all trackers in this batch
+			const maxProcessing = Math.max(...frames.map((f) => f.tProcessing ?? 0));
+			recordFrame(maxProcessing > 0 ? maxProcessing : undefined, tSend);
+		},
+		[handleFrame, recordFrame],
+	);
 
 	const wsUrl = `ws://${window.location.hostname}:${window.location.port || "5173"}/ws`;
 	const { status: connectionStatus, send } = useWebSocket({
 		url: wsUrl,
-		onFrame: handleFrame,
+		onFrame,
 	});
 
 	// Sync tracker list from backend on every (re)connect
@@ -298,6 +317,7 @@ export default function App() {
 				paused={paused}
 				trackerCount={trackerIds.length}
 				rangeCalibrated={allRangeCalibrated}
+				latency={latency}
 				onRangeCalibrateClick={() => setActiveWizard("bounds")}
 				onCalibrateClick={() => setActiveWizard("gaze")}
 				onClearCalibration={clearGazeCalibration}

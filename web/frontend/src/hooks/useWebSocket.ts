@@ -3,7 +3,7 @@ import type { ConnectionStatus, FrameMessage, TrackerFrame } from "../types/trac
 
 interface UseWebSocketOptions {
 	url: string;
-	onFrame?: (trackers: TrackerFrame[]) => void;
+	onFrame?: (trackers: TrackerFrame[], tSend?: number) => void;
 	onStatus?: (status: Record<string, unknown>) => void;
 }
 
@@ -32,7 +32,7 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 				const msg = JSON.parse(event.data);
 				if (msg.type === "frame") {
 					const frameMsg = msg as FrameMessage;
-					onFrameRef.current?.(frameMsg.trackers);
+					onFrameRef.current?.(frameMsg.trackers, frameMsg.tSend);
 				} else if (msg.type === "status") {
 					onStatusRef.current?.(msg);
 				}

@@ -34,11 +34,15 @@ export interface TrackerFrame {
 	cameraIndex: number;
 	image: string;
 	tracking: TrackingData;
+	/** Backend processing time in ms (capture → send) */
+	tProcessing?: number;
 }
 
 export interface FrameMessage {
 	type: "frame";
 	trackers: TrackerFrame[];
+	/** Backend monotonic timestamp at send time (seconds) */
+	tSend?: number;
 }
 
 export interface Settings {
