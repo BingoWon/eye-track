@@ -335,6 +335,11 @@ export default function App() {
 					setPausedAndSync(next);
 				}}
 				onChangeCameraClick={() => setShowCameraSelector(true)}
+				onChangeBackend={() => {
+					setBackendReady(false);
+					setTrackerIds([]);
+					setInitialLoading(true);
+				}}
 				mode={settings.mode}
 				onModeChange={handleModeChange}
 				theme={theme}

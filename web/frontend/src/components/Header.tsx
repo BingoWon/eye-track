@@ -1,9 +1,10 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
 	Crosshair,
 	Eye,
 	Flame,
 	LayoutDashboard,
+	Loader2,
 	Moon,
 	MousePointer,
 	Pause,
@@ -11,11 +12,14 @@ import {
 	RotateCcw,
 	Route,
 	ScanEye,
+	Server,
 	Sun,
+	Wifi,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { LatencyStats } from "../hooks/useLatency";
 import type { Theme } from "../hooks/useTheme";
+import { apiUrl, getBackendUrl, setBackendUrl } from "../lib/backend";
 import type { CalibrationResult } from "../lib/calibration";
 import type { ConnectionStatus, TrackingMode, ViewMode } from "../types/tracking";
 
@@ -36,6 +40,7 @@ interface HeaderProps {
 	onToggleGazeCursor: () => void;
 	onTogglePause: () => void;
 	onChangeCameraClick: () => void;
+	onChangeBackend: () => void;
 	onResetAll: () => void;
 	mode: TrackingMode;
 	onModeChange: (mode: TrackingMode) => void;
@@ -124,42 +129,192 @@ function latencyColor(ms: number): string {
 	return "var(--color-danger)";
 }
 
-function LatencyIndicator({ latency }: { latency: LatencyStats }) {
+/* ── Backend popover ── */
+
+function BackendPopover({
+	connectionStatus,
+	latency,
+	onChangeBackend,
+}: {
+	connectionStatus: ConnectionStatus;
+	latency: LatencyStats;
+	onChangeBackend: () => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const [url, setUrl] = useState(getBackendUrl);
+	const [testing, setTesting] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const popoverRef = useRef<HTMLDivElement>(null);
+
+	// Close on outside click
+	useEffect(() => {
+		if (!open) return;
+		const handler = (e: MouseEvent) => {
+			if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+				setOpen(false);
+			}
+		};
+		document.addEventListener("mousedown", handler);
+		return () => document.removeEventListener("mousedown", handler);
+	}, [open]);
+
+	// Reset form when opening
+	useEffect(() => {
+		if (open) {
+			setUrl(getBackendUrl());
+			setError(null);
+		}
+	}, [open]);
+
+	const handleConnect = useCallback(async () => {
+		const trimmed = url.trim().replace(/\/+$/, "");
+		if (!trimmed) return;
+		setTesting(true);
+		setError(null);
+		try {
+			setBackendUrl(trimmed);
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), 3000);
+			const res = await fetch(apiUrl("/api/cameras"), { signal: controller.signal });
+			clearTimeout(timeout);
+			if (res.ok) {
+				setOpen(false);
+				onChangeBackend();
+			} else {
+				setError(`Server responded with ${res.status}`);
+			}
+		} catch {
+			setError("Cannot reach server");
+		} finally {
+			setTesting(false);
+		}
+	}, [url, onChangeBackend]);
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		handleConnect();
+	};
+
 	const active = latency.frameInterval > 0;
-	const items = [
+	const isConnected = connectionStatus === "connected";
+
+	const latencyItems = [
 		{ label: "Proc", value: latency.processing, tip: "Backend processing (capture → encode)" },
 		{ label: "Net", value: latency.network, tip: "Network transport jitter" },
 		{ label: "Intv", value: latency.frameInterval, tip: "Frame interval at browser" },
 	];
+
 	return (
-		<div className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-[var(--color-border)]/40 bg-[var(--color-bg-primary)]/40">
-			{items.map(({ label, value, tip }) => (
-				<div key={label} className="flex items-center gap-1" title={tip}>
-					<span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
-						{label}
-					</span>
-					<span
-						className="text-[11px] font-semibold font-mono min-w-[32px] text-right"
-						style={{
-							color: active ? latencyColor(value) : "var(--color-text-muted)",
-							fontFeatureSettings: '"tnum"',
-						}}
+		<div className="relative" ref={popoverRef}>
+			{/* Trigger: status dot + latency */}
+			<button
+				type="button"
+				onClick={() => setOpen((v) => !v)}
+				className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all duration-200 cursor-pointer ${
+					open
+						? "bg-[var(--color-bg-card-hover)] border-[var(--color-border)]"
+						: "border-[var(--color-border)]/40 bg-[var(--color-bg-primary)]/40 hover:border-[var(--color-border)]/60"
+				}`}
+			>
+				{/* Status dot */}
+				<span
+					className="w-2 h-2 rounded-full shrink-0"
+					style={{ backgroundColor: statusColor(connectionStatus) }}
+				/>
+
+				{/* Latency numbers */}
+				{latencyItems.map(({ label, value, tip }) => (
+					<div key={label} className="flex items-center gap-1" title={tip}>
+						<span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
+							{label}
+						</span>
+						<span
+							className="text-[11px] font-semibold font-mono min-w-[28px] text-right"
+							style={{
+								color: active ? latencyColor(value) : "var(--color-text-muted)",
+								fontFeatureSettings: '"tnum"',
+							}}
+						>
+							{active ? `${Math.round(value)}` : "\u2014"}
+						</span>
+						<span className="text-[9px] text-[var(--color-text-muted)]">ms</span>
+					</div>
+				))}
+			</button>
+
+			{/* Popover */}
+			<AnimatePresence>
+				{open && (
+					<motion.div
+						initial={{ opacity: 0, y: 4, scale: 0.97 }}
+						animate={{ opacity: 1, y: 0, scale: 1 }}
+						exit={{ opacity: 0, y: 4, scale: 0.97 }}
+						transition={{ duration: 0.15 }}
+						className="absolute top-full right-0 mt-2 w-80 glass rounded-xl border border-[var(--color-border)]/60 p-4 shadow-lg z-[100]"
 					>
-						{active ? `${Math.round(value)}` : "\u2014"}
-					</span>
-					<span className="text-[9px] text-[var(--color-text-muted)]">ms</span>
-				</div>
-			))}
+						{/* Status row */}
+						<div className="flex items-center gap-2 mb-3">
+							<span
+								className="w-2.5 h-2.5 rounded-full shrink-0"
+								style={{ backgroundColor: statusColor(connectionStatus) }}
+							/>
+							<span className="text-[12px] font-medium text-[var(--color-text-primary)]">
+								{isConnected
+									? "Connected"
+									: connectionStatus === "connecting"
+										? "Connecting..."
+										: "Disconnected"}
+							</span>
+							{isConnected && (
+								<span className="text-[11px] text-[var(--color-text-secondary)] font-mono ml-auto truncate max-w-[160px]">
+									{getBackendUrl()}
+								</span>
+							)}
+						</div>
+
+						{/* URL form */}
+						<form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+							<label className="flex flex-col gap-1">
+								<span className="text-[10px] font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+									Backend URL
+								</span>
+								<div className="flex items-center gap-2">
+									<div className="relative flex-1">
+										<Server className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+										<input
+											type="text"
+											value={url}
+											onChange={(e) => {
+												setUrl(e.target.value);
+												setError(null);
+											}}
+											placeholder="http://localhost:8100"
+											className="w-full pl-8 pr-3 py-2 rounded-lg text-[12px] font-mono bg-[var(--color-bg-primary)] border border-[var(--color-border)]/60 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]/50 focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all"
+											disabled={testing}
+										/>
+									</div>
+									<button
+										type="submit"
+										disabled={testing || !url.trim()}
+										className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20 hover:bg-[var(--color-accent)]/15 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+									>
+										{testing ? (
+											<Loader2 className="w-3.5 h-3.5 animate-spin" />
+										) : (
+											<Wifi className="w-3.5 h-3.5" />
+										)}
+										Connect
+									</button>
+								</div>
+							</label>
+							{error && <p className="text-[10px] text-[var(--color-danger)] px-0.5">{error}</p>}
+						</form>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 }
-
-const STATUS_LABELS: Record<ConnectionStatus, string> = {
-	connected: "Connected",
-	connecting: "Connecting",
-	disconnected: "Disconnected",
-	error: "Error",
-};
 
 export function Header({
 	connectionStatus,
@@ -178,6 +333,7 @@ export function Header({
 	onToggleGazeCursor,
 	onTogglePause,
 	onChangeCameraClick,
+	onChangeBackend,
 	onResetAll,
 	mode,
 	onModeChange,
@@ -311,7 +467,7 @@ export function Header({
 				</div>
 			</div>
 
-			{/* Right: Actions + Theme + Connection */}
+			{/* Right: Actions + Theme + Backend */}
 			<div className="flex items-center gap-2 justify-end">
 				<HeaderButton
 					icon={paused ? Play : Pause}
@@ -372,8 +528,6 @@ export function Header({
 
 				<span className="w-px h-5 bg-[var(--color-border)]/40 mx-0.5" />
 
-				<LatencyIndicator latency={latency} />
-
 				{/* Theme toggle */}
 				<button
 					type="button"
@@ -384,11 +538,11 @@ export function Header({
 					{theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
 				</button>
 
-				{/* Connection dot */}
-				<span
-					className="w-2.5 h-2.5 rounded-full"
-					style={{ backgroundColor: statusColor(connectionStatus) }}
-					title={STATUS_LABELS[connectionStatus]}
+				{/* Backend: status + latency + popover */}
+				<BackendPopover
+					connectionStatus={connectionStatus}
+					latency={latency}
+					onChangeBackend={onChangeBackend}
 				/>
 			</div>
 		</header>
