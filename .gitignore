@@ -21,6 +21,7 @@ web/frontend/dist/
 # Private
 .claude/
 docs/
+repos/
 
 # IDE
 .idea/
