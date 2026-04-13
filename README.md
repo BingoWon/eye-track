@@ -95,27 +95,28 @@ graph TB
 ### Prerequisites
 
 - Python 3.10+
+- Node.js 18+ with pnpm
 - USB IR camera (tested with GC0308)
 
 ### Quick Start
 
 ```bash
-# Install dependencies
+# Install Python dependencies
 uv sync
 
-# Start the backend
+# Build the frontend
+cd web/frontend
+pnpm install
+pnpm build
+cd ../..
+
+# Start the server
 python web/server.py
 ```
 
-Then open [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com) in your browser — the frontend connects to your local backend automatically.
+Open `http://localhost:8100` in your browser.
 
-Alternatively, you can self-host the frontend:
-
-```bash
-cd web/frontend
-pnpm install
-pnpm build        # Output in dist/, auto-served by backend at http://localhost:8100
-```
+> A hosted frontend is also available at [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com) — it connects to your local backend, no build step needed.
 
 ### Development
 
