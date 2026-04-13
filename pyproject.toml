@@ -1,6 +1,6 @@
 [project]
 name = "eye-track"
-version = "0.5.0"
+version = "0.5.1"
 description = "Open-source 3D eye tracking platform using affordable IR cameras. Cross-platform (macOS, Windows, Linux)."
 readme = "README.md"
 requires-python = ">=3.10"
