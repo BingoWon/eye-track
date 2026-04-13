@@ -20,7 +20,7 @@ export interface CalibrationResult {
 /**
  * Check if collected samples are stable enough for calibration.
  * Returns true if std deviation of both x and y coordinates is below threshold
- * and we have at least 15 samples.
+ * and we have at least 5 samples.
  */
 export function checkStability(samples: [number, number][], threshold = 8): boolean {
 	if (samples.length < 5) return false;

@@ -94,33 +94,35 @@ graph TB
 
 ### 环境要求
 
-- Python 3.10+
+- [uv](https://docs.astral.sh/uv/)（Python 包管理器）
 - Node.js 18+，并安装 pnpm
 - USB 红外摄像头（已测试 GC0308）
 
-### 后端
+### 快速开始
 
 ```bash
-# 安装依赖
-uv sync
+# 构建前端
+cd web/frontend
+pnpm install
+pnpm build
+cd ../..
 
 # 启动服务
-uv run uvicorn web.app.main:app --host 0.0.0.0 --port 8100 --ws wsproto
+uv run eyetrack
 ```
 
-### 前端
+浏览器打开 `http://localhost:8100`。
+
+> 也可以直接访问 [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com)，无需构建前端，自动连接本地后端。
+
+### 开发
+
+前端热更新开发：
 
 ```bash
 cd web/frontend
 pnpm install
 pnpm dev          # 开发服务器 http://localhost:5173
-```
-
-生产部署时，构建前端静态文件，由 FastAPI 直接托管：
-
-```bash
-cd web/frontend
-pnpm build        # 输出到 dist/，后端自动挂载
 ```
 
 然后访问 `http://localhost:8100`。
