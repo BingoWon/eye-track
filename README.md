@@ -109,9 +109,17 @@ python web/server.py
 
 Then open [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com) in your browser — the frontend connects to your local backend automatically.
 
+Alternatively, you can self-host the frontend:
+
+```bash
+cd web/frontend
+pnpm install
+pnpm build        # Output in dist/, auto-served by backend at http://localhost:8100
+```
+
 ### Development
 
-If you want to develop the frontend locally:
+To develop the frontend with hot reload:
 
 ```bash
 cd web/frontend
