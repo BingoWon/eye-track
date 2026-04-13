@@ -4,7 +4,7 @@ Real-time gaze tracking with affordable IR cameras. Runs in the browser, support
 
 Built on OpenCV pupil detection and polynomial gaze mapping, wrapped in a modern web UI with live video, 3D eye visualization, heatmaps, and gaze trails.
 
-https://github.com/user-attachments/assets/8f7f9201-150e-4fcb-ba1e-9ae23bb7a660
+https://thebinwang.com/eyetrack-demo.mp4
 
 ---
 
@@ -95,25 +95,21 @@ graph TB
 ### Prerequisites
 
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
-- Node.js 18+ with pnpm
 - USB IR camera (tested with GC0308)
 
 ### Quick Start
 
 ```bash
-# Build the frontend
-cd web/frontend
-pnpm install
-pnpm build
-cd ../..
-
-# Start the server
 uv run eyetrack
 ```
 
-Open `http://localhost:8100` in your browser.
+Open [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com) — the frontend connects to your local backend automatically.
 
-> A hosted frontend is also available at [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com) — it connects to your local backend, no build step needed.
+> You can also self-host the frontend for offline use:
+> ```bash
+> cd web/frontend && pnpm install && pnpm build && cd ../..
+> uv run eyetrack    # Open http://localhost:8100
+> ```
 
 ### Development
 
