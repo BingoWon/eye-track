@@ -95,32 +95,28 @@ graph TB
 ### Prerequisites
 
 - Python 3.10+
-- Node.js 18+ with pnpm
 - USB IR camera (tested with GC0308)
 
-### Backend
+### Quick Start
 
 ```bash
 # Install dependencies
 uv sync
 
-# Start the server
-uv run uvicorn web.app.main:app --host 0.0.0.0 --port 8100 --ws wsproto
+# Start the backend
+python web/server.py
 ```
 
-### Frontend
+Then open [eyetrack.thebinwang.com](https://eyetrack.thebinwang.com) in your browser — the frontend connects to your local backend automatically.
+
+### Development
+
+If you want to develop the frontend locally:
 
 ```bash
 cd web/frontend
 pnpm install
 pnpm dev          # Dev server at http://localhost:5173
-```
-
-For production, build the frontend and let FastAPI serve it:
-
-```bash
-cd web/frontend
-pnpm build        # Output in dist/, auto-mounted by backend
 ```
 
 Then visit `http://localhost:8100`.
