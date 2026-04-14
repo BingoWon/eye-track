@@ -198,19 +198,26 @@ function BackendSelector({
 		if (!trimmed) return;
 		setTesting(true);
 		setError(null);
+		const previousUrl = getBackendUrl();
 		try {
+			// Temporarily set URL so apiUrl() resolves against the new target
 			setBackendUrl(trimmed);
 			const controller = new AbortController();
 			const timeout = setTimeout(() => controller.abort(), 3000);
 			const res = await fetch(apiUrl("/api/cameras"), { signal: controller.signal });
 			clearTimeout(timeout);
 			if (res.ok) {
+				// URL already saved — trigger reconnection
 				setOpen(false);
 				onChangeBackend();
 			} else {
+				// Revert to previous working URL
+				setBackendUrl(previousUrl);
 				setError(`Server responded with ${res.status}`);
 			}
 		} catch {
+			// Revert to previous working URL
+			setBackendUrl(previousUrl);
 			setError("Cannot reach server");
 		} finally {
 			setTesting(false);

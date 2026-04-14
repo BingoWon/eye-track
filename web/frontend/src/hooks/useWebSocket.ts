@@ -7,10 +7,14 @@ interface UseWebSocketOptions {
 	onStatus?: (status: Record<string, unknown>) => void;
 }
 
+const MIN_BACKOFF = 1000;
+const MAX_BACKOFF = 10000;
+
 export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 	const wsRef = useRef<WebSocket | null>(null);
 	const [status, setStatus] = useState<ConnectionStatus>("disconnected");
 	const reconnectTimeoutRef = useRef<number>(0);
+	const backoffRef = useRef(MIN_BACKOFF);
 	const onFrameRef = useRef(onFrame);
 	const onStatusRef = useRef(onStatus);
 
@@ -21,10 +25,18 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 		if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
 		setStatus("connecting");
-		const ws = new WebSocket(url);
+
+		let ws: WebSocket;
+		try {
+			ws = new WebSocket(url);
+		} catch {
+			setStatus("error");
+			return;
+		}
 
 		ws.onopen = () => {
 			setStatus("connected");
+			backoffRef.current = MIN_BACKOFF;
 		};
 
 		ws.onmessage = (event) => {
@@ -36,14 +48,15 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 				} else if (msg.type === "status") {
 					onStatusRef.current?.(msg);
 				}
-			} catch (e) {
-				console.error("[WS] Parse error:", e);
+			} catch {
+				// Malformed message — ignore
 			}
 		};
 
 		ws.onclose = () => {
 			setStatus("disconnected");
-			reconnectTimeoutRef.current = window.setTimeout(connect, 2000);
+			reconnectTimeoutRef.current = window.setTimeout(connect, backoffRef.current);
+			backoffRef.current = Math.min(backoffRef.current * 1.5, MAX_BACKOFF);
 		};
 
 		ws.onerror = () => {
@@ -67,6 +80,7 @@ export function useWebSocket({ url, onFrame, onStatus }: UseWebSocketOptions) {
 	}, []);
 
 	useEffect(() => {
+		backoffRef.current = MIN_BACKOFF;
 		connect();
 		return () => disconnect();
 	}, [connect, disconnect]);
