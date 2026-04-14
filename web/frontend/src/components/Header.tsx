@@ -49,15 +49,7 @@ interface HeaderProps {
 	onToggleTheme: () => void;
 }
 
-const VIEW_TABS: {
-	mode: ViewMode;
-	label: string;
-	icon: React.ComponentType<{ className?: string }>;
-}[] = [
-	{ mode: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-	{ mode: "heatmap", label: "Heatmap", icon: Flame },
-	{ mode: "trail", label: "Trail", icon: Route },
-];
+/* ── Shared ── */
 
 function statusColor(status: ConnectionStatus): string {
 	switch (status) {
@@ -70,13 +62,33 @@ function statusColor(status: ConnectionStatus): string {
 	}
 }
 
+function latencyColor(ms: number): string {
+	if (ms <= 0) return "var(--color-text-muted)";
+	if (ms < 16) return "var(--color-success)";
+	if (ms < 33) return "var(--color-text-secondary)";
+	if (ms < 80) return "var(--color-warning)";
+	return "var(--color-danger)";
+}
+
 const COLOR_MAP = {
 	accent: { bg: "34,211,238", text: "var(--color-accent)" },
 	success: { bg: "52,211,153", text: "var(--color-success)" },
 	warning: { bg: "251,191,36", text: "var(--color-warning)" },
 };
 
-function HeaderButton({
+const VIEW_TABS: {
+	mode: ViewMode;
+	label: string;
+	icon: React.ComponentType<{ className?: string }>;
+}[] = [
+	{ mode: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+	{ mode: "heatmap", label: "Heatmap", icon: Flame },
+	{ mode: "trail", label: "Trail", icon: Route },
+];
+
+/* ── Small reusable button ── */
+
+function ActionButton({
 	icon: Icon,
 	label,
 	onClick,
@@ -122,41 +134,33 @@ function HeaderButton({
 	);
 }
 
-function latencyColor(ms: number): string {
-	if (ms <= 0) return "var(--color-text-muted)";
-	if (ms < 16) return "var(--color-success)";
-	if (ms < 33) return "var(--color-text-secondary)";
-	if (ms < 80) return "var(--color-warning)";
-	return "var(--color-danger)";
-}
+/* ── Pill button (Backend / Camera) ── */
 
-function LatencyIndicator({ latency }: { latency: LatencyStats }) {
-	const active = latency.frameInterval > 0;
-	const items = [
-		{ label: "Proc", value: latency.processing, tip: "Backend processing (capture → encode)" },
-		{ label: "Net", value: latency.network, tip: "Network transport jitter" },
-		{ label: "Intv", value: latency.frameInterval, tip: "Frame interval at browser" },
-	];
+function PillButton({
+	icon: Icon,
+	label,
+	onClick,
+	color,
+}: {
+	icon: React.ComponentType<{ className?: string }>;
+	label: string;
+	onClick: () => void;
+	color: string;
+}) {
 	return (
-		<div className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-[var(--color-border)]/40 bg-[var(--color-bg-primary)]/40">
-			{items.map(({ label, value, tip }) => (
-				<div key={label} className="flex items-center gap-1" title={tip}>
-					<span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
-						{label}
-					</span>
-					<span
-						className="text-[11px] font-semibold font-mono min-w-[28px] text-right"
-						style={{
-							color: active ? latencyColor(value) : "var(--color-text-muted)",
-							fontFeatureSettings: '"tnum"',
-						}}
-					>
-						{active ? `${Math.round(value)}` : "\u2014"}
-					</span>
-					<span className="text-[9px] text-[var(--color-text-muted)]">ms</span>
-				</div>
-			))}
-		</div>
+		<button
+			type="button"
+			onClick={onClick}
+			className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border cursor-pointer transition-colors hover:opacity-80"
+			style={{
+				backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+				borderColor: `color-mix(in srgb, ${color} 20%, transparent)`,
+				color,
+			}}
+		>
+			<Icon className="w-3 h-3" />
+			{label}
+		</button>
 	);
 }
 
@@ -200,23 +204,19 @@ function BackendSelector({
 		setError(null);
 		const previousUrl = getBackendUrl();
 		try {
-			// Temporarily set URL so apiUrl() resolves against the new target
 			setBackendUrl(trimmed);
 			const controller = new AbortController();
 			const timeout = setTimeout(() => controller.abort(), 3000);
 			const res = await fetch(apiUrl("/api/cameras"), { signal: controller.signal });
 			clearTimeout(timeout);
 			if (res.ok) {
-				// URL already saved — trigger reconnection
 				setOpen(false);
 				onChangeBackend();
 			} else {
-				// Revert to previous working URL
 				setBackendUrl(previousUrl);
 				setError(`Server responded with ${res.status}`);
 			}
 		} catch {
-			// Revert to previous working URL
 			setBackendUrl(previousUrl);
 			setError("Cannot reach server");
 		} finally {
@@ -230,22 +230,21 @@ function BackendSelector({
 	};
 
 	const isConnected = connectionStatus === "connected";
+	const dotColor = statusColor(connectionStatus);
 
 	return (
 		<div className="relative" ref={popoverRef}>
 			<button
 				type="button"
 				onClick={() => setOpen((v) => !v)}
-				className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border cursor-pointer transition-colors ${
-					isConnected
-						? "bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/20 hover:bg-[var(--color-success)]/15"
-						: "bg-[var(--color-danger)]/10 text-[var(--color-danger)] border-[var(--color-danger)]/20 hover:bg-[var(--color-danger)]/15"
-				}`}
+				className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border cursor-pointer transition-colors hover:opacity-80"
+				style={{
+					backgroundColor: `color-mix(in srgb, ${dotColor} 10%, transparent)`,
+					borderColor: `color-mix(in srgb, ${dotColor} 20%, transparent)`,
+					color: dotColor,
+				}}
 			>
-				<span
-					className="w-1.5 h-1.5 rounded-full shrink-0"
-					style={{ backgroundColor: statusColor(connectionStatus) }}
-				/>
+				<span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
 				<Server className="w-3 h-3" />
 				Backend
 			</button>
@@ -259,11 +258,10 @@ function BackendSelector({
 						transition={{ duration: 0.15 }}
 						className="absolute top-full left-0 mt-2 w-80 glass rounded-xl border border-[var(--color-border)]/60 p-4 shadow-lg z-[100]"
 					>
-						{/* Status */}
 						<div className="flex items-center gap-2 mb-3">
 							<span
-								className="w-2.5 h-2.5 rounded-full shrink-0"
-								style={{ backgroundColor: statusColor(connectionStatus) }}
+								className="w-2 h-2 rounded-full shrink-0"
+								style={{ backgroundColor: dotColor }}
 							/>
 							<span className="text-[12px] font-medium text-[var(--color-text-primary)]">
 								{isConnected
@@ -279,7 +277,6 @@ function BackendSelector({
 							)}
 						</div>
 
-						{/* URL form */}
 						<form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
 							<div className="flex items-center gap-2">
 								<div className="relative flex-1">
@@ -317,6 +314,38 @@ function BackendSelector({
 		</div>
 	);
 }
+
+/* ── Clearable button wrapper ── */
+
+function ClearableButton({
+	children,
+	onClear,
+	showClear,
+	clearTitle,
+}: {
+	children: React.ReactNode;
+	onClear: () => void;
+	showClear: boolean;
+	clearTitle: string;
+}) {
+	return (
+		<div className="relative group">
+			{children}
+			{showClear && (
+				<button
+					type="button"
+					onClick={onClear}
+					className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--color-danger)] text-white text-[8px] font-bold items-center justify-center cursor-pointer hidden group-hover:flex"
+					title={clearTitle}
+				>
+					×
+				</button>
+			)}
+		</div>
+	);
+}
+
+/* ── Main Header ── */
 
 export function Header({
 	connectionStatus,
@@ -360,8 +389,16 @@ export function Header({
 		}
 	}, [viewMode]);
 
+	const active = latency.frameInterval > 0;
+	const latencyItems = [
+		{ label: "Proc", value: latency.processing, tip: "Backend processing (capture → encode)" },
+		{ label: "Net", value: latency.network, tip: "Network transport jitter" },
+		{ label: "Intv", value: latency.frameInterval, tip: "Frame interval at browser" },
+	];
+
 	return (
-		<header className="glass-heavy h-14 flex items-center justify-between px-5 relative z-50 shrink-0 border-b border-transparent">
+		<header className="glass-heavy h-13 flex items-center px-4 gap-4 relative z-50 shrink-0 border-b border-transparent">
+			{/* Bottom gradient border */}
 			<div
 				className="absolute bottom-0 left-0 right-0 h-px"
 				style={{
@@ -371,113 +408,85 @@ export function Header({
 				}}
 			/>
 
-			{/* Left: Logo + Backend + Camera */}
-			<div className="flex items-center gap-3">
-				<div className="w-8 h-8 rounded-lg bg-[var(--color-accent)]/8 flex items-center justify-center border border-[var(--color-accent)]/10">
-					<Eye className="w-[18px] h-[18px] text-[var(--color-accent)]" />
-				</div>
-				<div className="flex flex-col">
-					<span className="text-[15px] font-semibold tracking-tight text-[var(--color-text-primary)] leading-tight">
-						EyeTrack
-					</span>
-					<span className="text-[10px] font-medium text-[var(--color-text-secondary)] tracking-wide uppercase">
-						Gaze Tracker
-					</span>
-				</div>
+			{/* ── Left: Brand + Context ── */}
+			<div className="flex items-center gap-2.5 shrink-0">
+				<Eye className="w-5 h-5 text-[var(--color-accent)]" />
+				<span className="text-[14px] font-semibold tracking-tight text-[var(--color-text-primary)]">
+					EyeTrack
+				</span>
 
-				<span className="w-px h-5 bg-[var(--color-border)]/40 mx-0.5" />
+				<span className="w-px h-4 bg-[var(--color-border)]/30" />
 
 				<BackendSelector connectionStatus={connectionStatus} onChangeBackend={onChangeBackend} />
 
 				{trackerCount > 0 && (
-					<button
-						type="button"
+					<PillButton
+						icon={Camera}
+						label="Camera"
 						onClick={onChangeCameraClick}
-						className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20 cursor-pointer hover:bg-[var(--color-accent)]/15 transition-colors"
-					>
-						<Camera className="w-3 h-3" />
-						Camera
-					</button>
+						color="var(--color-accent)"
+					/>
 				)}
 			</div>
 
-			{/* Center: Mode + View tabs */}
-			<div className="flex items-center gap-3">
-				{/* Tracking mode */}
-				<div className="flex items-center gap-2">
-					<span className="text-[10px] font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
-						Mode
-					</span>
-					<nav className="relative flex items-center gap-0.5 bg-[var(--color-bg-primary)]/50 rounded-xl p-1 border border-[var(--color-border)]/50">
-						{(
-							[
-								{ value: "classic", label: "Classic" },
-								{ value: "enhanced", label: "Enhanced" },
-								{ value: "screen", label: "Screen" },
-							] as const
-						).map(({ value, label }) => (
-							<button
-								key={value}
-								type="button"
-								onClick={() => onModeChange(value)}
-								className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 cursor-pointer ${
-									mode === value
-										? "bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/20"
-										: "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-transparent"
-								}`}
-							>
-								{label}
-							</button>
-						))}
-					</nav>
-				</div>
+			{/* ── Center: Navigation ── */}
+			<div className="flex-1 flex items-center justify-center gap-3">
+				{/* Mode switcher */}
+				<nav className="relative flex items-center gap-0.5 bg-[var(--color-bg-primary)]/50 rounded-lg p-0.5 border border-[var(--color-border)]/40">
+					{(
+						[
+							{ value: "classic", label: "Classic" },
+							{ value: "enhanced", label: "Enhanced" },
+							{ value: "screen", label: "Screen" },
+						] as const
+					).map(({ value, label }) => (
+						<button
+							key={value}
+							type="button"
+							onClick={() => onModeChange(value)}
+							className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 cursor-pointer ${
+								mode === value
+									? "bg-[var(--color-accent)]/10 text-[var(--color-accent)]"
+									: "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+							}`}
+						>
+							{label}
+						</button>
+					))}
+				</nav>
 
-				<span className="w-1 h-1 rounded-full bg-[var(--color-text-muted)]/40" />
-
-				{/* View tabs */}
-				<div className="flex items-center gap-2">
-					<span className="text-[10px] font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">
-						View
-					</span>
-					<nav className="relative flex items-center gap-0.5 bg-[var(--color-bg-primary)]/50 rounded-xl p-1 border border-[var(--color-border)]/50">
-						<motion.div
-							className="absolute top-1 bottom-1 rounded-lg bg-[var(--color-accent)]/8 border border-[var(--color-accent)]/15 shadow-[0_0_12px_rgba(34,211,238,0.06)]"
-							initial={false}
-							animate={{
-								left: indicator.left,
-								width: indicator.width,
+				{/* View switcher */}
+				<nav className="relative flex items-center gap-0.5 bg-[var(--color-bg-primary)]/50 rounded-lg p-0.5 border border-[var(--color-border)]/40">
+					<motion.div
+						className="absolute top-0.5 bottom-0.5 rounded-md bg-[var(--color-accent)]/8 border border-[var(--color-accent)]/15"
+						initial={false}
+						animate={{ left: indicator.left, width: indicator.width }}
+						transition={{ type: "spring", stiffness: 500, damping: 35 }}
+					/>
+					{VIEW_TABS.map(({ mode: vm, label, icon: Icon }) => (
+						<button
+							type="button"
+							key={vm}
+							ref={(el) => {
+								if (el) tabRefs.current.set(vm, el);
 							}}
-							transition={{
-								type: "spring",
-								stiffness: 500,
-								damping: 35,
-							}}
-						/>
-						{VIEW_TABS.map(({ mode, label, icon: Icon }) => (
-							<button
-								type="button"
-								key={mode}
-								ref={(el) => {
-									if (el) tabRefs.current.set(mode, el);
-								}}
-								onClick={() => onViewModeChange(mode)}
-								className={`relative z-10 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 cursor-pointer ${
-									viewMode === mode
-										? "text-[var(--color-accent)]"
-										: "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-								}`}
-							>
-								<Icon className="w-3.5 h-3.5" />
-								{label}
-							</button>
-						))}
-					</nav>
-				</div>
+							onClick={() => onViewModeChange(vm)}
+							className={`relative z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150 cursor-pointer ${
+								viewMode === vm
+									? "text-[var(--color-accent)]"
+									: "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+							}`}
+						>
+							<Icon className="w-3.5 h-3.5" />
+							{label}
+						</button>
+					))}
+				</nav>
 			</div>
 
-			{/* Right: Actions + Theme + Latency */}
-			<div className="flex items-center gap-2 justify-end">
-				<HeaderButton
+			{/* ── Right: Actions + Metrics ── */}
+			<div className="flex items-center gap-1.5 shrink-0">
+				<ActionButton
 					icon={paused ? Play : Pause}
 					label={paused ? "Resume" : "Pause"}
 					onClick={onTogglePause}
@@ -485,8 +494,12 @@ export function Header({
 					activeColor="warning"
 					inactiveColor="accent"
 				/>
-				<div className="relative group">
-					<HeaderButton
+				<ClearableButton
+					onClear={onClearRangeCalibration}
+					showClear={rangeCalibrated}
+					clearTitle="Clear range calibration"
+				>
+					<ActionButton
 						icon={ScanEye}
 						label={rangeCalibrated ? "Bounds ✓" : "Bounds"}
 						onClick={onRangeCalibrateClick}
@@ -494,19 +507,13 @@ export function Header({
 						activeColor="success"
 						inactiveColor="accent"
 					/>
-					{rangeCalibrated && (
-						<button
-							type="button"
-							onClick={onClearRangeCalibration}
-							className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--color-danger)] text-white text-[8px] font-bold items-center justify-center cursor-pointer hidden group-hover:flex"
-							title="Clear range calibration"
-						>
-							×
-						</button>
-					)}
-				</div>
-				<div className="relative group">
-					<HeaderButton
+				</ClearableButton>
+				<ClearableButton
+					onClear={onClearCalibration}
+					showClear={!!calibration}
+					clearTitle="Clear gaze calibration"
+				>
+					<ActionButton
 						icon={Crosshair}
 						label={calibration ? "Gaze ✓" : "Gaze"}
 						onClick={onCalibrateClick}
@@ -514,40 +521,47 @@ export function Header({
 						activeColor="success"
 						inactiveColor="accent"
 					/>
-					{calibration && (
-						<button
-							type="button"
-							onClick={onClearCalibration}
-							className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--color-danger)] text-white text-[8px] font-bold items-center justify-center cursor-pointer hidden group-hover:flex"
-							title="Clear gaze calibration"
-						>
-							×
-						</button>
-					)}
-				</div>
-				<HeaderButton
+				</ClearableButton>
+				<ActionButton
 					icon={MousePointer}
 					label="Cursor"
 					onClick={onToggleGazeCursor}
 					disabled={!calibration}
 					active={!!calibration && showGazeCursor}
 				/>
-				<HeaderButton icon={RotateCcw} label="Reset" onClick={onResetAll} />
+				<ActionButton icon={RotateCcw} label="Reset" onClick={onResetAll} />
 
-				<span className="w-px h-5 bg-[var(--color-border)]/40 mx-0.5" />
+				<span className="w-px h-4 bg-[var(--color-border)]/30 mx-0.5" />
 
-				{/* Theme toggle */}
+				{/* Theme */}
 				<button
 					type="button"
 					onClick={onToggleTheme}
-					className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer border border-transparent hover:border-[var(--color-border)]/50"
+					className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)] transition-all cursor-pointer"
 					title={theme === "dark" ? "Switch to light" : "Switch to dark"}
 				>
-					{theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+					{theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
 				</button>
 
-				{/* Latency metrics */}
-				<LatencyIndicator latency={latency} />
+				{/* Latency */}
+				<div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--color-bg-primary)]/40 border border-[var(--color-border)]/30">
+					{latencyItems.map(({ label, value, tip }) => (
+						<div key={label} className="flex items-center gap-0.5" title={tip}>
+							<span className="text-[9px] font-medium text-[var(--color-text-muted)] uppercase">
+								{label}
+							</span>
+							<span
+								className="text-[10px] font-semibold font-mono min-w-[24px] text-right"
+								style={{
+									color: active ? latencyColor(value) : "var(--color-text-muted)",
+									fontFeatureSettings: '"tnum"',
+								}}
+							>
+								{active ? `${Math.round(value)}` : "\u2014"}
+							</span>
+						</div>
+					))}
+				</div>
 			</div>
 		</header>
 	);
