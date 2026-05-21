@@ -3,6 +3,7 @@
 [English](./README.md) | **中文**
 
 <p>
+  <a href="https://github.com/BingoWon/eye-track/actions/workflows/ci.yml"><img src="https://github.com/BingoWon/eye-track/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-black" alt="跨平台" />
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/OpenCV-classical_CV-5C3EE8?logo=opencv&logoColor=white" alt="OpenCV" />
