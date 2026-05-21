@@ -1,5 +1,7 @@
 # 👁 EyeTrack
 
+**English** | [中文](./README.zh-CN.md)
+
 Real-time gaze tracking with affordable IR cameras. Runs in the browser, supports dual-eye stereo tracking, and works on macOS, Windows, and Linux.
 
 Built on OpenCV pupil detection and polynomial gaze mapping, wrapped in a modern web UI with live video, 3D eye visualization, heatmaps, and gaze trails.
