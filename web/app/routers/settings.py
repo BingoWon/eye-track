@@ -73,18 +73,20 @@ async def toggle_pause(body: dict) -> JSONResponse:
 @router.get("/status")
 async def get_status() -> JSONResponse:
     """Return current tracking status."""
-    return JSONResponse({
-        "trackerCount": len(registry.trackers),
-        "trackers": [
-            {
-                "id": t.id,
-                "cameraIndex": t.camera_index,
-                "running": t.camera.is_running,
-                "cameraFps": round(t.camera.camera_fps, 1),
-            }
-            for t in registry.trackers.values()
-        ],
-        "streamFps": settings.stream_fps,
-        "connectedClients": len(ws_clients),
-        "latestTracking": state.latest_tracking or None,
-    })
+    return JSONResponse(
+        {
+            "trackerCount": len(registry.trackers),
+            "trackers": [
+                {
+                    "id": t.id,
+                    "cameraIndex": t.camera_index,
+                    "running": t.camera.is_running,
+                    "cameraFps": round(t.camera.camera_fps, 1),
+                }
+                for t in registry.trackers.values()
+            ],
+            "streamFps": settings.stream_fps,
+            "connectedClients": len(ws_clients),
+            "latestTracking": state.latest_tracking or None,
+        }
+    )

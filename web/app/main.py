@@ -64,15 +64,19 @@ async def lifespan(app: FastAPI):
                     continue
                 logger.warning(
                     "Camera %s not matched by ID, trying saved index %d",
-                    unique_id, resolved_index,
+                    unique_id,
+                    resolved_index,
                 )
 
             rotation = int(cam_cfg.get("rotation", 0))
             eye = str(cam_cfg.get("eye", "right"))
             try:
                 instance = registry.add(
-                    int(resolved_index), app_settings,
-                    rotation=rotation, unique_id=unique_id, eye=eye,
+                    int(resolved_index),
+                    app_settings,
+                    rotation=rotation,
+                    unique_id=unique_id,
+                    eye=eye,
                 )
                 apply_range_calibration(instance.state, cam_cfg)
                 if cam_cfg.get("gazeCal"):

@@ -78,9 +78,7 @@ class FrameProcessor:
         )
         thresh_relaxed = mask_outside_square(thresh_relaxed, darkest_point, s.mask_size)
 
-        raw_ellipse, raw_conf = self._detect_pupil(
-            thresh_strict, thresh_medium, thresh_relaxed
-        )
+        raw_ellipse, raw_conf = self._detect_pupil(thresh_strict, thresh_medium, thresh_relaxed)
         ellipse, confidence = self._validate(raw_ellipse, raw_conf)
 
         # Always compute both eye centers
@@ -158,9 +156,7 @@ class FrameProcessor:
 
         return None, 0.0
 
-    def _validate(
-        self, ellipse: tuple | None, confidence: float
-    ) -> tuple[tuple | None, float]:
+    def _validate(self, ellipse: tuple | None, confidence: float) -> tuple[tuple | None, float]:
         """Reject blinks and out-of-range detections."""
         if ellipse is None:
             return None, 0.0

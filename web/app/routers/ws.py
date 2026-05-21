@@ -21,14 +21,18 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     logger.info("WebSocket client connected (%d total)", len(ws_clients))
 
     try:
-        await ws.send_text(json.dumps({
-            "type": "status",
-            "trackers": [
-                {"id": t.id, "cameraIndex": t.camera_index}
-                for t in registry.trackers.values()
-            ],
-            "streamFps": settings.stream_fps,
-        }))
+        await ws.send_text(
+            json.dumps(
+                {
+                    "type": "status",
+                    "trackers": [
+                        {"id": t.id, "cameraIndex": t.camera_index}
+                        for t in registry.trackers.values()
+                    ],
+                    "streamFps": settings.stream_fps,
+                }
+            )
+        )
     except Exception:
         ws_clients.discard(ws)
         return

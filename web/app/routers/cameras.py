@@ -88,19 +88,24 @@ async def add_tracker(body: dict) -> JSONResponse:
         eye = "right"
     try:
         tracker = registry.add(
-            int(camera_index), settings,
-            rotation=rotation, unique_id=unique_id, eye=eye,
+            int(camera_index),
+            settings,
+            rotation=rotation,
+            unique_id=unique_id,
+            eye=eye,
         )
     except RuntimeError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
     persist_current_state()
-    return JSONResponse({
-        "id": tracker.id,
-        "cameraIndex": tracker.camera_index,
-        "uniqueId": tracker.unique_id,
-        "eye": tracker.eye,
-        "rotation": tracker.rotation,
-    })
+    return JSONResponse(
+        {
+            "id": tracker.id,
+            "cameraIndex": tracker.camera_index,
+            "uniqueId": tracker.unique_id,
+            "eye": tracker.eye,
+            "rotation": tracker.rotation,
+        }
+    )
 
 
 @router.delete("/trackers/{tracker_id}")
@@ -116,20 +121,22 @@ async def remove_tracker(tracker_id: str) -> JSONResponse:
 @router.get("/trackers")
 async def list_trackers() -> JSONResponse:
     """List active trackers."""
-    return JSONResponse({
-        "trackers": [
-            {
-                "id": t.id,
-                "cameraIndex": t.camera_index,
-                "eye": t.eye,
-                "running": t.camera.is_running,
-                "rangeCalibrated": t.state.pupil_bounds is not None,
-                "gazeCalibration": t.gaze_calibration,
-                "rotation": t.rotation,
-            }
-            for t in registry.trackers.values()
-        ]
-    })
+    return JSONResponse(
+        {
+            "trackers": [
+                {
+                    "id": t.id,
+                    "cameraIndex": t.camera_index,
+                    "eye": t.eye,
+                    "running": t.camera.is_running,
+                    "rangeCalibrated": t.state.pupil_bounds is not None,
+                    "gazeCalibration": t.gaze_calibration,
+                    "rotation": t.rotation,
+                }
+                for t in registry.trackers.values()
+            ]
+        }
+    )
 
 
 @router.patch("/trackers/{tracker_id}/rotation")
