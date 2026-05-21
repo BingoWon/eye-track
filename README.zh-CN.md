@@ -2,6 +2,16 @@
 
 [English](./README.md) | **中文**
 
+<p>
+  <img src="https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-black" alt="跨平台" />
+  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/OpenCV-classical_CV-5C3EE8?logo=opencv&logoColor=white" alt="OpenCV" />
+  <img src="https://img.shields.io/badge/FastAPI-008080?logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/ML-不需要训练-22c55e" alt="无需 ML 训练" />
+  <img src="https://img.shields.io/badge/license-MIT-yellow" alt="MIT License" />
+</p>
+
 基于廉价红外摄像头的实时注视追踪系统，浏览器即开即用，支持双目立体追踪，兼容 macOS、Windows 和 Linux。
 
 底层采用 OpenCV 瞳孔检测与多项式注视映射，上层是现代化 Web 界面——实时视频、3D 眼球模型、热力图、注视轨迹，一应俱全。

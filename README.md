@@ -2,6 +2,16 @@
 
 **English** | [中文](./README.zh-CN.md)
 
+<p>
+  <img src="https://img.shields.io/badge/platform-macOS%20·%20Windows%20·%20Linux-black" alt="Cross-platform" />
+  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/OpenCV-classical_CV-5C3EE8?logo=opencv&logoColor=white" alt="OpenCV" />
+  <img src="https://img.shields.io/badge/FastAPI-008080?logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/ML-not_required-22c55e" alt="No ML required" />
+  <img src="https://img.shields.io/badge/license-MIT-yellow" alt="MIT License" />
+</p>
+
 Real-time gaze tracking with affordable IR cameras. Runs in the browser, supports dual-eye stereo tracking, and works on macOS, Windows, and Linux.
 
 Built on OpenCV pupil detection and polynomial gaze mapping, wrapped in a modern web UI with live video, 3D eye visualization, heatmaps, and gaze trails.
